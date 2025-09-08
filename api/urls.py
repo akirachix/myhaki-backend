@@ -4,7 +4,7 @@ from api.views import CaseAssignmentViewSet, CaseViewSet
 
 router = DefaultRouter()
 router.register(r'cases', CaseViewSet)
-router.register(r'cases', CaseAssignmentViewSet, basename='cases')
+router.register(r'cases-assignments', CaseAssignmentViewSet, basename='cases')
 
 urlpatterns = [
    path('', include(router.urls)),
