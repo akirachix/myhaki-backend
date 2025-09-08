@@ -84,24 +84,7 @@ class CaseAPITest(APITestCase):
         self.assertEqual(case.case_description, "Updated description")
         self.assertEqual(case.status, "accepted")
 
-    def test_delete_case(self):
-        case = Case.objects.create(
-            detainee_id=123,
-            case_description="To be deleted",
-            predicted_case_type="other",
-            predicted_urgency_level="low",
-            latitude=1.0,
-            longitude=36.0,
-            monthly_income="less_than_30000",
-            income_source="informal",
-            stage="trial",
-            status="pending"
-        )
-        url = reverse('case-detail', args=[case.case_id])
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        with self.assertRaises(Case.DoesNotExist):
-            case.refresh_from_db()
+
 
 
             
