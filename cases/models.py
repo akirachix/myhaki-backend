@@ -14,8 +14,7 @@ class CaseAssignment(models.Model):
    #     on_delete=models.CASCADE,
    #     related_name='assignments'
    # )
-#    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='assignments')
-   case_id = models.IntegerField()
+   case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
    is_assigned = models.BooleanField(default=True)
    assign_date = models.DateTimeField(auto_now_add=True)
    reject_reason = models.TextField(null=True, blank=True)
@@ -23,11 +22,6 @@ class CaseAssignment(models.Model):
    confirmed_by_lawyer = models.BooleanField(default=False)
    created_at = models.DateTimeField(auto_now_add=True)
    updated_at = models.DateTimeField(auto_now=True)
-
-
-
-
-
 
 
 
@@ -61,7 +55,6 @@ class Detainee(models.Model):
    def __str__(self):
         return f"Detainee {self.detainee_id}: {self.first_name} {self.last_name} (User {self.user_id or 'None'})"
 
-    #    return f"Detainee {self.detainee_id} (User ID {self.user_id})"
 class Case(models.Model):
     case_id = models.AutoField(primary_key=True)
     detainee = models.ForeignKey(Detainee, on_delete=models.CASCADE, related_name='cases', null=True, blank=True)
