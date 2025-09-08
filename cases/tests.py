@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from cases.models import Case
 
+
 class CaseAPITest(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
@@ -20,15 +21,15 @@ class CaseAPITest(APITestCase):
             "trial_date": "2025-06-01",
             "latitude": 1.2921,
             "longitude": 36.8219,
-            "monthly_income": "20000.00",
-            "income_source": "Job",
+            "monthly_income": "less_than_30000",
+            "income_source": "informal",
             "dependents": {"count": 2, "description": "Two kids"},
             "stage": "in_progress",
             "status": "pending"
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.case_id = response.data['case_id']  # Store for other tests if needed
+        self.case_id = response.data['case_id']
 
     def test_get_case(self):
         case = Case.objects.create(
@@ -38,6 +39,8 @@ class CaseAPITest(APITestCase):
             predicted_urgency_level="high",
             latitude=1.2921,
             longitude=36.8219,
+            monthly_income="less_than_30000",
+            income_source="informal",
             stage="in_progress",
             status="pending"
         )
@@ -54,6 +57,8 @@ class CaseAPITest(APITestCase):
             predicted_urgency_level="high",
             latitude=1.2921,
             longitude=36.8219,
+            monthly_income="less_than_30000",
+            income_source="informal",
             stage="in_progress",
             status="pending"
         )
@@ -67,8 +72,8 @@ class CaseAPITest(APITestCase):
             "trial_date": "2025-07-01",
             "latitude": 1.2922,
             "longitude": 36.8220,
-            "monthly_income": "25000.00",
-            "income_source": "Freelance",
+            "monthly_income": "greater_than_30000",
+            "income_source": "formal",
             "dependents": {"count": 3, "description": "Three kids"},
             "stage": "handled",
             "status": "accepted"
@@ -87,6 +92,8 @@ class CaseAPITest(APITestCase):
             predicted_urgency_level="low",
             latitude=1.0,
             longitude=36.0,
+            monthly_income="less_than_30000",
+            income_source="informal",
             stage="trial",
             status="pending"
         )

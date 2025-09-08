@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import JSONField
 
+
 class Case(models.Model):
     case_id = models.AutoField(primary_key=True)
     detainee_id = models.IntegerField()
@@ -22,8 +23,21 @@ class Case(models.Model):
     trial_date = models.DateField(null=True, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    monthly_income = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    income_source = models.CharField(max_length=100, null=True, blank=True)
+
+    income_source = models.CharField(
+        max_length=10,
+        choices=[('informal', 'Informal'), ('formal', 'Formal')],
+        null=True,
+        blank=True
+    )
+
+    monthly_income = models.CharField(
+        max_length=20,
+        choices=[('less_than_30000', 'Less than 30000'), ('greater_than_30000', 'Greater than 30000')],
+        null=True,
+        blank=True
+    )
+
     dependents = JSONField(null=True, blank=True, default=dict)
     stage = models.CharField(
         max_length=50,
@@ -38,7 +52,6 @@ class Case(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
 
     class Meta:
         constraints = [
