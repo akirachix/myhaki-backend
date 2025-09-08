@@ -6,12 +6,15 @@ from .serializers import CaseAssignmentSerializer
 from rest_framework.response import Response
 from cpd.models import CPDPoint
 from .serializers import CPDPointSerializer
+from cases.models import CaseAssignment, Case
+from .serializers import CaseAssignmentSerializer, CaseSerializer
+
+
 
 class CaseAssignmentViewSet(viewsets.ModelViewSet):
    queryset = CaseAssignment.objects.all()
    serializer_class = CaseAssignmentSerializer
    permission_classes = [AllowAny]  
-
 
 class CPDPointViewSet(viewsets.ModelViewSet):
     queryset = CPDPoint.objects.all()
@@ -26,3 +29,9 @@ class CPDPointViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response({"message": "CPD Point Details", "data": serializer.data})
+
+class CaseViewSet(viewsets.ModelViewSet):
+    queryset = Case.objects.all()
+    serializer_class = CaseSerializer
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  
