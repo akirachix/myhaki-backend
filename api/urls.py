@@ -6,7 +6,7 @@ from api.views import CPDPointViewSet
 
 router = DefaultRouter()
 router.register(r'cpd-points', CPDPointViewSet, basename='cpdpoint')
-router.register(r'cases', CaseAssignmentViewSet, basename='cases')
+router.register(r'case-assignments', CaseAssignmentViewSet, basename='case-assignment')
 
 
 urlpatterns = [

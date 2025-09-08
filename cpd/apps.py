@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
-class CPDConfig(AppConfig):
+class CpdConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'cpd'
