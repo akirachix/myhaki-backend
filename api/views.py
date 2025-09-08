@@ -1,7 +1,15 @@
-from rest_framework import viewsets 
-from rest_framework.permissions import IsAuthenticated, AllowAny 
-from cases.models import Detainee
-from .serializers import DetaineeSerializer
+from rest_framework import viewsets
+from rest_framework.permissions import  IsAuthenticated, AllowAny
+from django.shortcuts import render
+from cases.models import CaseAssignment,Detainee
+from .serializers import CaseAssignmentSerializer,DetaineeSerializer
+
+
+
+class CaseAssignmentViewSet(viewsets.ModelViewSet):
+   queryset = CaseAssignment.objects.all()
+   serializer_class = CaseAssignmentSerializer
+   permission_classes = [AllowAny]  
 
 
 class DetaineeViewSet(viewsets.ModelViewSet):
