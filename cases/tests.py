@@ -11,7 +11,7 @@ from datetime import date
 from django.test import TestCase
 from cases.models import Detainee
 from datetime import date
-# from django.contrib.auth.models import User   # Uncomment later when user model is ready
+# from django.contrib.auth.models import User  
 
 
 class DetaineeModelTest(TestCase):
@@ -20,7 +20,7 @@ class DetaineeModelTest(TestCase):
         detainee = Detainee.objects.create(
             first_name="John",
             last_name="Doe",
-            # user=self.user,  # commented out for now
+            # user=self.user,  
             id_number="123456789",
             gender="male",
             date_of_birth=date(1995, 5, 17),
@@ -35,37 +35,37 @@ class DetaineeModelTest(TestCase):
 
     def test_str_representation(self):
         detainee = Detainee.objects.create(
-            first_name="Jane",
-            last_name="Smith",
-            # user=self.user,  # commented out for now
+            first_name="lwam",
+            last_name="bisrat",
+            # user=self.user,  
             id_number="987654321",
             gender="female",
             relation_to_applicant="other"
         )
-        expected_str = f"Detainee {detainee.detainee_id}: Jane Smith (User None)"
+        expected_str = f"Detainee {detainee.detainee_id}: lwam bisrat (User None)"
         self.assertEqual(str(detainee), expected_str)
 
     def test_id_number_unique(self):
         Detainee.objects.create(
-            first_name="Alice",
-            last_name="Brown",
+            first_name="meri",
+            last_name="bisrat",
             id_number="9999",
             gender="male",
             relation_to_applicant="family"
         )
         with self.assertRaises(Exception):
             Detainee.objects.create(
-                first_name="Bob",
+                first_name="Betty",
                 last_name="White",
-                id_number="9999",  # duplicate
+                id_number="9999",  
                 gender="female",
                 relation_to_applicant="other"
             )
 
     def test_optional_date_of_birth(self):
         detainee = Detainee.objects.create(
-            first_name="NoDOB",
-            last_name="Person",
+            first_name="lily",
+            last_name="berhe",
             id_number="abc123",
             gender="male",
             relation_to_applicant="family"
