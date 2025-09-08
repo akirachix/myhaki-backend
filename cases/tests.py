@@ -1,9 +1,88 @@
-# from django.test import TestCase
+from django.test import TestCase
 # from django.urls import reverse
 # from rest_framework import status
 # from rest_framework.test import APITestCase
 # from django.contrib.auth.models import User
 # from cases.models import CaseAssignment
+from cases.models import Detainee
+from datetime import date
+
+
+from django.test import TestCase
+from cases.models import Detainee
+from datetime import date
+# from django.contrib.auth.models import User   # Uncomment later when user model is ready
+
+
+class DetaineeModelTest(TestCase):
+
+    def test_create_detainee(self):
+        detainee = Detainee.objects.create(
+            first_name="John",
+            last_name="Doe",
+            # user=self.user,  # commented out for now
+            id_number="123456789",
+            gender="male",
+            date_of_birth=date(1995, 5, 17),
+            relation_to_applicant="family"
+        )
+        self.assertEqual(detainee.first_name, "John")
+        self.assertEqual(detainee.last_name, "Doe")
+        self.assertEqual(detainee.id_number, "123456789")
+        self.assertEqual(detainee.gender, "male")
+        self.assertEqual(detainee.relation_to_applicant, "family")
+        self.assertIsNotNone(detainee.created_at)
+
+    def test_str_representation(self):
+        detainee = Detainee.objects.create(
+            first_name="Jane",
+            last_name="Smith",
+            # user=self.user,  # commented out for now
+            id_number="987654321",
+            gender="female",
+            relation_to_applicant="other"
+        )
+        expected_str = f"Detainee {detainee.detainee_id}: Jane Smith (User None)"
+        self.assertEqual(str(detainee), expected_str)
+
+    def test_id_number_unique(self):
+        Detainee.objects.create(
+            first_name="Alice",
+            last_name="Brown",
+            id_number="9999",
+            gender="male",
+            relation_to_applicant="family"
+        )
+        with self.assertRaises(Exception):
+            Detainee.objects.create(
+                first_name="Bob",
+                last_name="White",
+                id_number="9999",  # duplicate
+                gender="female",
+                relation_to_applicant="other"
+            )
+
+    def test_optional_date_of_birth(self):
+        detainee = Detainee.objects.create(
+            first_name="NoDOB",
+            last_name="Person",
+            id_number="abc123",
+            gender="male",
+            relation_to_applicant="family"
+        )
+        self.assertIsNone(detainee.date_of_birth)
+
+    # def test_foreign_key_relation(self):
+    #     user = User.objects.create_user(username="testuser", password="testpass")
+    #     detainee = Detainee.objects.create(
+    #         first_name="FK",
+    #         last_name="Tester",
+    #         user=user,
+    #         id_number="xyz789",
+    #         gender="female",
+    #         relation_to_applicant="family"
+    #     )
+    #     self.assertEqual(detainee.user.username, "testuser")
 
 
 
@@ -75,73 +154,6 @@
 #            assignment.refresh_from_db()
 
 
-from django.test import TestCase
-# from django.contrib.auth.models import User  
-from cases.models import Detainee
-from datetime import date
 
 
-class DetaineeModelTest(TestCase):
 
-    def setUp(self):
-        # self.user = User.objects.create_user(username="testuser", password="testpass")
-        pass   # 🔹 No user setup for now
-
-    def test_create_detainee(self):
-        detainee = Detainee.objects.create(
-            # user=self.user,
-            id_number="123456789",
-            gender="male",
-            date_of_birth=date(1995, 5, 17),
-            relation_to_applicant="family"
-        )
-        self.assertEqual(detainee.id_number, "123456789")
-        self.assertEqual(detainee.gender, "male")
-        self.assertEqual(detainee.relation_to_applicant, "family")
-        self.assertIsNotNone(detainee.created_at)
-
-    def test_str_representation(self):
-        detainee = Detainee.objects.create(
-            # user=self.user,
-            id_number="987654321",
-            gender="female",
-            relation_to_applicant="other"
-        )
-        # self.assertEqual(
-        #     str(detainee),
-        #     f"Detainee {detainee.detainee_id} (User ID {self.user.id})"
-        # )
-        self.assertIn(f"Detainee{detainee.detainee_id}", str(detainee))  # ✅ Safe check without user
-
-    def test_id_number_unique(self):
-        Detainee.objects.create(
-            # user=self.user,
-            id_number="9999",
-            gender="male",
-            relation_to_applicant="family"
-        )
-        with self.assertRaises(Exception):
-            Detainee.objects.create(
-                # user=self.user,
-                id_number="9999",
-                gender="female",
-                relation_to_applicant="other"
-            )
-
-    def test_optional_date_of_birth(self):
-        detainee = Detainee.objects.create(
-            # user=self.user,
-            id_number="abc123",
-            gender="male",
-            relation_to_applicant="family"
-        )
-        self.assertIsNone(detainee.date_of_birth)
-
-    # def test_foreign_key_relation(self):
-    #     detainee = Detainee.objects.create(
-    #         user=self.user,
-    #         id_number="xyz789",
-    #         gender="female",
-    #         relation_to_applicant="family"
-    #     )
-    #     self.assertEqual(detainee.user.username, "testuser")
