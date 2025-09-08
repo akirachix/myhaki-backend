@@ -5,6 +5,10 @@ from django.db.models import JSONField
 
 class Detainee(models.Model):
    detainee_id = models.AutoField(primary_key=True)
+   first_name = models.CharField(max_length=100, null=False, blank=False)
+   last_name = models.CharField(max_length=100, null=False, blank=False)
+
+
    user = models.ForeignKey(
        User,
        on_delete=models.CASCADE,
@@ -27,7 +31,7 @@ class Detainee(models.Model):
 
 
    def __str__(self):
-      return f"Detainee{self.detainee_id}(User {self.user_id or 'None'})"
+        return f"Detainee {self.detainee_id}: {self.first_name} {self.last_name} (User {self.user_id or 'None'})"
 
     #    return f"Detainee {self.detainee_id} (User ID {self.user_id})"
 
