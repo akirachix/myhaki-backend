@@ -1,7 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from api.views import CaseAssignmentViewSet, CaseViewSet
-from api.views import CPDPointViewSet
+from api.views import CaseAssignmentViewSet, CaseViewSet,CPDPointViewSet
 
 
 router = DefaultRouter()

@@ -5,9 +5,8 @@ from cases.models import CaseAssignment
 from .serializers import CaseAssignmentSerializer
 from rest_framework.response import Response
 from cpd.models import CPDPoint
-from .serializers import CPDPointSerializer
 from cases.models import CaseAssignment, Case
-from .serializers import CaseAssignmentSerializer, CaseSerializer
+from .serializers import CaseAssignmentSerializer, CaseSerializer,CPDPointSerializer
 
 
 
