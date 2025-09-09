@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from cases.models import Case, CaseAssignment, Detainee
-
+from cpd.models import CPDPoint
+from cases.models import CaseAssignment,Detainee, Case
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,6 +14,10 @@ class CaseSerializer(serializers.ModelSerializer):
             )
         return data
 
+class CPDPointSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CPDPoint
+        fields = '__all__'
 
 class CaseAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
