@@ -2,8 +2,9 @@ from django.db import models
 
 class CPDPoint(models.Model):
     cpd_id = models.AutoField(primary_key=True)
-    # lawyer = models.ForeignKey(to='lawyer.Lawyer', on_delete=models.CASCADE)
-    # case = models.ForeignKey(to='case.Case', on_delete=models.CASCADE)
+    lawyer_id = models.IntegerField(null=True, blank=True)
+    # lawyer = models.ForeignKey('lawyer.Lawyer', on_delete=models.CASCADE, null=True, blank=True)
+    case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='points')
     description = models.TextField(null=True, blank=True)
     points_earned = models.FloatField(default=1.0)
     created_at = models.DateTimeField(auto_now_add=True)
