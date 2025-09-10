@@ -149,8 +149,10 @@ class CaseAPITest(APITestCase):
         self.assertEqual(response.data['stage'], "in_progress")
         self.assertEqual(response.data['status'], "pending")
 
+    @patch('api.serializers.requests.post')
+    def test_update_case(self, mock_post):
+        mock_post.side_effect = mock_translate_side_effect
 
-    def test_update_case(self):
         case = Case.objects.create(
             detainee=self.detainee,
             case_description="Old description",
