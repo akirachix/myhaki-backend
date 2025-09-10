@@ -4,6 +4,13 @@ from cases.models import CaseAssignment, Detainee, Case
 import requests
 import json
 from django.conf import settings
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  
+
+TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
+LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,7 +20,7 @@ class CaseSerializer(serializers.ModelSerializer):
     def translate_text(self, text):
         url = "https://api.translateplus.io/v1/translate"
         headers = {
-            "x-api-key": settings.TRANSLATE_PLUS_API_KEY,
+            "x-api-key":TRANSLATE_PLUS_API_KEY,
             "Content-Type": "application/json"
         }
         payload = {
@@ -36,7 +43,7 @@ class CaseSerializer(serializers.ModelSerializer):
     def geocode_location(self, location_text):
         url = "https://us1.locationiq.com/v1/search.php"
         params = {
-            "key": settings.LOCATIONIQ_API_KEY,
+            "key":LOCATIONIQ_API_KEY,
             "q": location_text,
             "format": "json"
         }
