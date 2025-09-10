@@ -8,7 +8,7 @@ User = get_user_model()
 class MyTestCase(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass123")
+        self.user = User.objects.create_user(password="pass123",email="testuser@example.com")
 
     def test_example(self):
         self.assertTrue(self.user.is_authenticated)

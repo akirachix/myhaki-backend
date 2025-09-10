@@ -9,6 +9,8 @@ from unittest.mock import patch
 import json
 from django.contrib.auth import get_user_model
 
+from unittest.mock import Mock
+
 User = get_user_model()
 class MyTestCase(TestCase):
 
@@ -27,35 +29,40 @@ class MockResponse:
     def json(self):
         return self.json_data
 
-
 def mock_translate_side_effect(*args, **kwargs):
     payload = kwargs.get('json', {})
     text = payload.get('text', '')
 
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    
     if text == "Aliiba mahindi ya jirani usiku wa manane.":
-        return MockResponse({
+        mock_resp.json.return_value = {
             "translations": {
                 "translation": "He stole his neighbor's corn in the middle of the night."
             }
-        }, 200)
+        }
     elif text == "Kituo cha Polisi Machakos":
-        return MockResponse({
+        mock_resp.json.return_value = {
             "translations": {
                 "translation": "Machakos Police Station"
             }
-        }, 200)
+        }
     elif text == json.dumps({"count": 3, "description": "watoto watatu"}):
-        return MockResponse({
+        mock_resp.json.return_value = {
             "translations": {
                 "translation": json.dumps({"count": 3, "description": "three children"})
             }
-        }, 200)
+        }
     else:
-        return MockResponse({
+        mock_resp.json.return_value = {
             "translations": {
                 "translation": text
             }
-        }, 200)
+        }
+    
+    return mock_resp
+
 
 
 class CaseAPITest(APITestCase):
