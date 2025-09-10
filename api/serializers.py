@@ -324,35 +324,37 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
     practice_number = serializers.CharField(required=True)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
-
     class Meta:
         model = User
         fields = ['email', 'password', 'practice_number', 'first_name', 'last_name']
         extra_kwargs = {'role': {'default': 'lawyer'}}
-
     def validate_practice_number(self, value):
-        if LawyerProfile.objects.filter(practice_number=value).exists():
-            raise serializers.ValidationError("A lawyer with this practice number already exists.")
-        return value
-
+        value = value.strip().upper()
+        try:
+            lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=value)
+            if lawyer_profile.practice_number != value:
+                lawyer_profile.practice_number = value
+                lawyer_profile.save()
+            return value
+        except LawyerProfile.DoesNotExist:
+            raise serializers.ValidationError("No lawyer found with this practice number.")
     def create(self, validated_data):
         password = validated_data.pop('password')
         practice_number = validated_data.pop('practice_number')
-
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=password,
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            role='lawyer'
-        )
-
-        LawyerProfile.objects.create(
-            user=user,
-            practice_number=practice_number,
-            verified=True
-        )
-
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+        email = validated_data.pop('email')
+        lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=practice_number.strip().upper())
+        user = lawyer_profile.user
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.role = 'lawyer'
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+        lawyer_profile.verified = True
+        lawyer_profile.save()
         return user
 
 
