@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
+
 TRANSLATE_PLUS_URL = os.getenv("TRANSLATE_PLUS_URL")
 LOCATIONIQ_URL = os.getenv("LOCATIONIQ_URL")
 
@@ -175,7 +176,7 @@ TEMPLATES = [
 
 
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'fake-secret-key-for-tests-12345')
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
 EMAIL_HOST = os.getenv('EMAIL_HOST')
