@@ -11,6 +11,8 @@ load_dotenv()
 
 TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
+TRANSLATE_PLUS_URL = os.getenv('TRANSLATE_PLUS_URL')
+LOCATIONIQ_URL = os.getenv('LOCATIONIQ_URL')
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,7 +20,7 @@ class CaseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def translate_text(self, text):
-        url = "https://api.translateplus.io/v1/translate"
+        url = TRANSLATE_PLUS_URL
         headers = {
             "x-api-key":TRANSLATE_PLUS_API_KEY,
             "Content-Type": "application/json"
@@ -41,7 +43,7 @@ class CaseSerializer(serializers.ModelSerializer):
             return text
 
     def geocode_location(self, location_text):
-        url = "https://us1.locationiq.com/v1/search.php"
+        url = LOCATIONIQ_URL
         params = {
             "key":LOCATIONIQ_API_KEY,
             "q": location_text,
