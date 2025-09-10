@@ -13,7 +13,7 @@ User = get_user_model()
 class MyTestCase(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass123")
+        self.user = User.objects.create_user(password="pass123",email="testuser@example.com")
 
     def test_example(self):
         self.assertTrue(self.user.is_authenticated)
@@ -60,7 +60,7 @@ def mock_translate_side_effect(*args, **kwargs):
 
 class CaseAPITest(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.user = User.objects.create_user(password='testpass', email="testuser@example.com",)
         self.detainee = Detainee.objects.create(
             first_name='Jane',
             last_name='Doe',
@@ -69,6 +69,7 @@ class CaseAPITest(APITestCase):
             gender='female',
             relation_to_applicant='family'
         )
+        
         self.client.login(username='testuser', password='testpass')
 
     @patch('api.serializers.requests.post')

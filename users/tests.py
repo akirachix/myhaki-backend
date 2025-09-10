@@ -7,13 +7,14 @@ User = get_user_model()
 class CustomUserAndProfilesTestCase(TestCase):
 
     def setUp(self):
+            
         self.user = User.objects.create_user(
-            email="testuser@example.com",
-            first_name="Test",
-            last_name="User",
-            password="pass123",
-            role="lawyer"
-        )
+     email="testuser@example.com",
+        password="pass123",
+        first_name="Test",
+        last_name="User",
+        role="lawyer"
+    )
         self.admin = User.objects.create_superuser(
             email="admin@example.com",
             first_name="Admin",
