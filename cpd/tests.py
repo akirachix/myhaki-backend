@@ -2,6 +2,16 @@ from django.test import TestCase
 from cases.models import Detainee, Case
 from cpd.models import CPDPoint
 from datetime import date
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+class MyTestCase(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="pass123")
+
+    def test_example(self):
+        self.assertTrue(self.user.is_authenticated)
 
 class CPDPointModelTest(TestCase):
     def setUp(self):

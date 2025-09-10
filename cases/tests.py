@@ -7,6 +7,16 @@ from cases.models import Case, Detainee
 from datetime import date
 from unittest.mock import patch
 import json
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+class MyTestCase(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="pass123")
+
+    def test_example(self):
+        self.assertTrue(self.user.is_authenticated)
 
 
 class MockResponse:
