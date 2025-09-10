@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import JSONField
+from lawyer.models import Lawyer 
 
 
 
@@ -9,11 +10,11 @@ from django.db.models import JSONField
 class CaseAssignment(models.Model):
    assignment_id = models.AutoField(primary_key=True)
    lawyer_id = models.IntegerField()
-   # lawyer = models.ForeignKey(
-   #     'lawyer.Lawyer',
-   #     on_delete=models.CASCADE,
-   #     related_name='assignments'
-   # )
+   lawyer = models.ForeignKey(
+       Lawyer,
+       on_delete=models.CASCADE,
+       related_name='assignments'
+   )
    case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
    is_assigned = models.BooleanField(default=True)
    assign_date = models.DateTimeField(auto_now_add=True)
@@ -61,7 +62,7 @@ class Case(models.Model):
     case_description = models.TextField()
     predicted_case_type = models.CharField(
         max_length=50,
-        choices=[('criminal', 'Criminal'), ('civil', 'Civil'), ('other', 'Other')],
+        choices=[('criminal', 'Criminal'), ('civil', 'Civil'), ('constitutional and human rights', 'Constitutional and Human Rights'), ('family', 'Family'), ('labor', 'Labor'), ('property', 'Property'), ('other', 'Other')],
         null=True,
         blank=True
     )

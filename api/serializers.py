@@ -1,3 +1,4 @@
+from unittest import case
 from rest_framework import serializers
 from cpd.models import CPDPoint
 from cases.models import CaseAssignment, Detainee, Case
@@ -6,6 +7,8 @@ import json
 from django.conf import settings
 import os
 from dotenv import load_dotenv
+from cases.services import assign_case_automatically
+from .tasks import async_assign_case
 
 load_dotenv()  
 
@@ -71,7 +74,15 @@ class CaseSerializer(serializers.ModelSerializer):
             validated_data['latitude'] = lat
             validated_data['longitude'] = lon
 
-        return super().create(validated_data)
+        predicted_type, predicted_urgency = self.classify_case_ai(validated_data['case_description'])
+        validated_data['predicted_case_type'] = predicted_type
+        validated_data['predicted_urgency_level'] = predicted_urgency
+
+        case = super().create(validated_data)
+
+        async_assign_case.delay(case.case_id)  
+
+        return case
 
     def update(self, instance, validated_data):
         if 'case_description' in validated_data:
@@ -97,6 +108,15 @@ class CaseSerializer(serializers.ModelSerializer):
                 {"monthly_income": "You are not eligible for this service"}
             )
         return data
+    
+    def classify_case_ai(self, text):
+        text_lower = text.lower()
+        if any(word in text_lower for word in ['theft', 'robbery', 'assault', 'murder', 'drugs']):
+            return 'criminal', 'high'
+        elif any(word in text_lower for word in ['divorce', 'custody', 'property', 'contract']):
+            return 'civil', 'medium'
+        else:
+            return 'other', 'low'
 
 
 class CPDPointSerializer(serializers.ModelSerializer):
