@@ -30,3 +30,6 @@ jobs:
     - name: Run tests with coverage
       run: |
         python manage.py test
+
+env:
+  SECRET_KEY: 'fake-secret-key-for-tests'
