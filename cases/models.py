@@ -8,12 +8,12 @@ from django.db.models import JSONField
 class CaseAssignment(models.Model):
    assignment_id = models.AutoField(primary_key=True)
    lawyer_id = models.IntegerField()
-   # lawyer = models.ForeignKey(
-   #     'lawyer.Lawyer',
-   #     on_delete=models.CASCADE,
-   #     related_name='assignments'
-   # )
-#    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='assignments')
+   lawyer = models.ForeignKey(
+       'lawyer.Lawyer',
+       on_delete=models.CASCADE,
+       related_name='assignments'
+   )
+   case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='assignments')
    case_id = models.IntegerField()
    is_assigned = models.BooleanField(default=True)
    assign_date = models.DateTimeField(auto_now_add=True)
