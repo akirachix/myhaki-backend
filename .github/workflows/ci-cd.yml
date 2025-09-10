@@ -31,5 +31,3 @@ jobs:
       run: |
         python manage.py test
 
-env:
-  SECRET_KEY: 'fake-secret-key-for-tests'
