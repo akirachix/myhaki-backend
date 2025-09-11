@@ -13,7 +13,7 @@ locationiq_api_key = os.getenv("LOCATIONIQ_API_KEY")
 def geocode_address(work_place):
     if not work_place.strip():
         return None, None
-    url = f'https://us1.locationiq.com/v1/search.php?key={api_key}&q={work_place}&format=json'
+    url = f'https://us1.locationiq.com/v1/search.php?key={locationiq_api_key}&q={work_place}&format=json'
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()

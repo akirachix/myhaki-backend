@@ -1,13 +1,17 @@
 from rest_framework import serializers
 from cpd.models import CPDPoint
 from cases.models import CaseAssignment, Detainee, Case
+from cases.models import CaseAssignment, Case, Detainee
+from users.models import User, LawyerProfile
 import requests
 import json
 from django.conf import settings
 import os
 from dotenv import load_dotenv
+from cases.tasks import async_assign_case
 
-load_dotenv()  
+
+load_dotenv()
 
 TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
@@ -16,7 +20,26 @@ LOCATIONIQ_URL = os.getenv('LOCATIONIQ_URL')
 from cases.models import CaseAssignment, Case, Detainee
 from users.models import User, LawyerProfile, ApplicantProfile, LskAdminProfile
 
+class LawyerProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    email = serializers.CharField(source='user.email')
+
+    class Meta:
+        model = LawyerProfile
+        fields = ['practice_number', 'first_name', 'last_name', 'email', 'verified']
+
+class DetaineeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Detainee
+        fields = ['detainee_id', 'first_name', 'last_name', 'id_number', 'gender']
+
 class CaseSerializer(serializers.ModelSerializer):
+    detainee = DetaineeSerializer(read_only=True)
+    assigned_lawyer = LawyerProfileSerializer(source='assignments.first.lawyer', read_only=True)
+    predicted_case_type = serializers.CharField(required=False)
+    predicted_urgency_level = serializers.CharField(required=False)
+
     class Meta:
         model = Case
         fields = '__all__'
@@ -24,7 +47,7 @@ class CaseSerializer(serializers.ModelSerializer):
     def translate_text(self, text):
         url = TRANSLATE_PLUS_URL
         headers = {
-            "x-api-key":TRANSLATE_PLUS_API_KEY,
+            "x-api-key": TRANSLATE_PLUS_API_KEY,
             "Content-Type": "application/json"
         }
         payload = {
@@ -38,16 +61,14 @@ class CaseSerializer(serializers.ModelSerializer):
             if "translations" in res and "translation" in res["translations"]:
                 return res["translations"]["translation"]
             else:
-                print("Something is wrong with the response structure:", res)
                 return text
         else:
-            print(f"Translation API error {response.status_code}:", response.text)
             return text
 
     def geocode_location(self, location_text):
         url = LOCATIONIQ_URL
         params = {
-            "key":LOCATIONIQ_API_KEY,
+            "key": LOCATIONIQ_API_KEY,
             "q": location_text,
             "format": "json"
         }
@@ -57,7 +78,19 @@ class CaseSerializer(serializers.ModelSerializer):
             return data['lat'], data['lon']
         return None, None
 
+    def classify_case_ai(self, text):
+        text_lower = text.lower()
+        if any(word in text_lower for word in ['theft', 'robbery', 'assault', 'murder', 'drugs']):
+            return 'criminal', 'high'
+        elif any(word in text_lower for word in ['divorce', 'custody', 'property', 'contract']):
+            return 'civil', 'medium'
+        else:
+            return 'other', 'low'
+
     def create(self, validated_data):
+        validated_data['predicted_case_type'] = 'other'
+        validated_data['predicted_urgency_level'] = 'medium'
+
         if 'case_description' in validated_data:
             validated_data['case_description'] = self.translate_text(validated_data['case_description'])
 
@@ -73,7 +106,13 @@ class CaseSerializer(serializers.ModelSerializer):
             validated_data['latitude'] = lat
             validated_data['longitude'] = lon
 
-        return super().create(validated_data)
+        predicted_type, predicted_urgency = self.classify_case_ai(validated_data['case_description'])
+        validated_data['predicted_case_type'] = predicted_type
+        validated_data['predicted_urgency_level'] = predicted_urgency
+
+        case = super().create(validated_data)
+        async_assign_case.delay(case.case_id)
+        return case
 
     def update(self, instance, validated_data):
         if 'case_description' in validated_data:
@@ -95,9 +134,7 @@ class CaseSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data.get('monthly_income') == 'greater_than_30000':
-            raise serializers.ValidationError(
-                {"monthly_income": "You are not eligible for this service"}
-            )
+            raise serializers.ValidationError({"monthly_income": "You are not eligible for this service"})
         return data
 
 
@@ -294,30 +331,6 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
 
-class LawyerProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = LawyerProfile
-        fields = '__all__'
-
-
-class LskAdminSerializer(serializers.ModelSerializer):
-    lawyer = LawyerProfileSerializer(read_only=True)
-
-    class Meta:
-        model = LskAdminProfile
-        fields = '__all__'
-
-
-class ApplicantSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = ApplicantProfile
-        fields = '__all__'
-
-
 class LawyerRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
@@ -338,6 +351,8 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
             return value
         except LawyerProfile.DoesNotExist:
             raise serializers.ValidationError("No lawyer found with this practice number.")
+
+
     def create(self, validated_data):
         password = validated_data.pop('password')
         practice_number = validated_data.pop('practice_number')
@@ -355,6 +370,25 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         lawyer_profile.verified = True
         lawyer_profile.save()
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+        email = validated_data.pop('email')
+
+
+        lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=practice_number.strip().upper())
+
+        user = lawyer_profile.user
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.role = 'lawyer'
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+
+        lawyer_profile.verified = True
+        lawyer_profile.save()
+
         return user
 
 
@@ -376,4 +410,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
         return attrs
-
+class ApplicantSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = ApplicantProfile
+        fields = '__all__'

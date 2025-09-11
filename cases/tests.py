@@ -8,7 +8,7 @@ from datetime import date
 from unittest.mock import patch
 import json
 from django.contrib.auth import get_user_model
-
+from unittest.mock import patch
 from unittest.mock import Mock
 
 User = get_user_model()
@@ -111,31 +111,42 @@ class CaseAPITest(APITestCase):
         self.assertAlmostEqual(float(response.data['longitude']), 37.2634146, places=6)
         self.assertEqual(response.data['dependents']['count'], 3)
         self.assertEqual(response.data['dependents']['description'], 'three children')
+    
+    @patch('api.serializers.async_assign_case.delay')
+    @patch('api.serializers.requests.post')
+    @patch('api.serializers.requests.get')
+    def test_post_case(self, mock_get, mock_post, mock_delay):
+        mock_post.side_effect = mock_translate_side_effect
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = [
+            {'lat': '-1.5176837', 'lon': '37.2634146'}
+        ]
 
-    def test_post_case_invalid_monthly_income(self):
         url = reverse('case-list')
         data = {
             "detainee": self.detainee.detainee_id,
-            "case_description": "He had a fight in a bar",
-            "predicted_case_type": "criminal",
+            "case_description": "Aliiba mahindi ya jirani usiku wa manane.",
+            "predicted_case_type": "civil",
             "predicted_urgency_level": "high",
             "date_of_offense": "2025-01-01",
             "trial_date": "2025-06-01",
-            "latitude": 1.2921,
-            "longitude": 36.8219,
-            "monthly_income": "greater_than_30000",
-            "income_source": "formal",
-            "dependents": {"count": 2, "description": "Two kids"},
+            "police_station": "Kituo cha Polisi Machakos",
+            "monthly_income": "less_than_30000",
+            "income_source": "informal",
+            "dependents": {"count": 3, "description": "watoto watatu"},
             "stage": "in_progress",
             "status": "pending"
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('monthly_income', response.data)
-        self.assertEqual(
-            response.data['monthly_income'][0],
-            "You are not eligible for this service"
-        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['case_description'], "He stole his neighbor's corn in the middle of the night.")
+        self.assertEqual(response.data['police_station'], 'Machakos Police Station')
+        self.assertAlmostEqual(float(response.data['latitude']), -1.5176837, places=6)
+        self.assertAlmostEqual(float(response.data['longitude']), 37.2634146, places=6)
+        self.assertEqual(response.data['dependents']['count'], 3)
+        self.assertEqual(response.data['dependents']['description'], 'three children')
+
+        mock_delay.assert_called_once_with(response.data['case_id'])
 
     def test_get_case(self):
         case = Case.objects.create(
@@ -264,74 +275,3 @@ class DetaineeModelTest(TestCase):
         )
         self.assertIsNone(detainee.date_of_birth)
 
-
-# from cases.models import CaseAssignment
-
-
-
-# class CaseAssignmentAPITest(APITestCase):
-#    def setUp(self):
-#        self.user = User.objects.create_user(username='assignuser', password='testpass')
-#        self.client.login(username='assignuser', password='testpass')
-#        self.detainee = Detainee.objects.create(
-           
-#            user=self.user,
-#            id_number="D987654321",
-#            gender="male",
-#            relation_to_applicant="family"
-#        )
-#        self.case = Case.objects.create(
-#            detainee=self.detainee,
-#            case_description="Assignment test",
-#            predicted_case_type="civil",
-#            predicted_urgency_level="high",
-#            latitude=1.2921,
-#            longitude=36.8219,
-#            stage="in_progress",
-#            status="pending"
-#        )
-
-
-#    def test_post_caseassignment(self):
-#        url = reverse('caseassignment-list')
-#        data = {
-#            "case": self.case.case_id,
-#            "lawyer_id": 456,
-#            "is_assigned": True
-#        }
-#        response = self.client.post(url, data, format='json')
-#        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-
-#    def test_put_caseassignment(self):
-#        assignment = CaseAssignment.objects.create(
-#            case=self.case,
-#            lawyer_id=456,
-#            is_assigned=True
-#        )
-#        url = reverse('caseassignment-detail', args=[assignment.assignment_id])
-#        data = {
-#            "case": assignment.case.case_id,
-#            "lawyer_id": assignment.lawyer_id,
-#            "is_assigned": True,
-#            "reject_reason": "Conflict of interest",
-#            "confirmed_by_applicant": assignment.confirmed_by_applicant,
-#            "confirmed_by_lawyer": False
-#        }
-#        response = self.client.put(url, data, format='json')
-#        self.assertEqual(response.status_code, status.HTTP_200_OK)
-#        assignment.refresh_from_db()
-#        self.assertEqual(assignment.reject_reason, "Conflict of interest")
-
-
-#    def test_delete_caseassignment(self):
-#        assignment = CaseAssignment.objects.create(
-#            case=self.case,
-#            lawyer_id=456,
-#            is_assigned=True
-#        )
-#        url = reverse('caseassignment-detail', args=[assignment.assignment_id])
-#        response = self.client.delete(url)
-#        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-#        with self.assertRaises(CaseAssignment.DoesNotExist):
-#            assignment.refresh_from_db()

@@ -12,6 +12,7 @@ router.register(r"users", UsersViewSet, basename="users")
 router.register(r"detainees", DetaineeViewSet, basename="detainees")
 
 
+
 urlpatterns = [
    path('', include(router.urls)),
    path('register-lawyer/', LawyerRegistrationView.as_view(), name='register-lawyer'),
