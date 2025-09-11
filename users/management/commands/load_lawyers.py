@@ -4,12 +4,15 @@ from time import sleep
 from decimal import Decimal
 from django.core.management.base import BaseCommand
 from users.models import User, LawyerProfile
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
+locationiq_api_key = os.getenv("LOCATIONIQ_API_KEY")
 
 def geocode_address(work_place):
     if not work_place.strip():
         return None, None
-    api_key = 'pk.282de0e70acbaf9a575d24efb64a2025'
     url = f'https://us1.locationiq.com/v1/search.php?key={api_key}&q={work_place}&format=json'
     try:
         response = requests.get(url, timeout=10)

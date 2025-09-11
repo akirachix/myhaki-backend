@@ -16,7 +16,6 @@ import random
 from django.conf import settings
 from rest_framework.views import APIView
 from users.permissions import IsAdmin, IsUser
-from users.forms import Login
 from django.shortcuts import render
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
