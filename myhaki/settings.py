@@ -15,6 +15,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -84,7 +85,7 @@ WSGI_APPLICATION = 'myhaki.wsgi.application'
 
 
 
-load_dotenv()
+
 
 DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"))}
 if not os.getenv("DATABASE_URL"):
