@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import JSONField
+from users.models import LawyerProfile
 
 
 
@@ -9,12 +10,12 @@ from django.db.models import JSONField
 
 class CaseAssignment(models.Model):
    assignment_id = models.AutoField(primary_key=True)
-   lawyer_id = models.IntegerField()
-   # lawyer = models.ForeignKey(
-   #     'lawyer.Lawyer',
-   #     on_delete=models.CASCADE,
-   #     related_name='assignments'
-   # )
+   lawyer = models.ForeignKey(
+       LawyerProfile,
+       on_delete=models.CASCADE,
+       related_name='assignments',
+       default=1
+   )
    case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
    is_assigned = models.BooleanField(default=True)
    assign_date = models.DateTimeField(auto_now_add=True)
@@ -36,9 +37,11 @@ class Detainee(models.Model):
        settings.AUTH_USER_MODEL,
        on_delete=models.CASCADE,
        null=True,
-       blank=True
-    #    limit_choices_to={'role': 'applicant'}
+       
+       blank=True,
+       limit_choices_to={'role': 'applicant'}
    )
+   
    id_number = models.CharField(max_length=50, null=True, blank=True, unique=True)
    gender = models.CharField(
        max_length=20,
@@ -62,14 +65,15 @@ class Case(models.Model):
     case_description = models.TextField()
     predicted_case_type = models.CharField(
         max_length=50,
-        choices=[('criminal', 'Criminal'), ('civil', 'Civil'), ('other', 'Other')],
+        choices=[('criminal', 'Criminal'), ('civil', 'Civil'), ('constitutional and human rights', 'Constitutional and Human Rights'), ('family', 'Family'), ('labor', 'Labor'), ('property', 'Property'), ('other', 'Other')],
         null=True,
         blank=True
     )
     predicted_urgency_level = models.CharField(
         max_length=20,
         choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')],
-        null=False
+        null=True,
+        blank=True
     )
     date_of_offense = models.DateField(null=True, blank=True)
     trial_date = models.DateField(null=True, blank=True)

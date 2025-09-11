@@ -9,11 +9,12 @@ import os
 load_dotenv()
 
 locationiq_api_key = os.getenv("LOCATIONIQ_API_KEY")
+LAWYER_URL = os.getenv("LAWYER_URL")
 
 def geocode_address(work_place):
     if not work_place.strip():
         return None, None
-    url = f'https://us1.locationiq.com/v1/search.php?key={api_key}&q={work_place}&format=json'
+    url = LAWYER_URL.format(locationiq_api_key=locationiq_api_key, work_place=work_place)
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
