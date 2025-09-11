@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'cpd',
     'users',
     'corsheaders',
-    
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -154,6 +155,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated', 
     ],
+
 }
 
 
@@ -172,8 +174,6 @@ TEMPLATES = [
         },
     },
 ]
-
-
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'fake-secret-key-for-tests-12345')
 
