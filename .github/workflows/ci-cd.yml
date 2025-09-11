@@ -30,3 +30,4 @@ jobs:
     - name: Run tests with coverage
       run: |
         python manage.py test
+

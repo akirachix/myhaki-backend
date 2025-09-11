@@ -13,6 +13,8 @@ TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
 TRANSLATE_PLUS_URL = os.getenv('TRANSLATE_PLUS_URL')
 LOCATIONIQ_URL = os.getenv('LOCATIONIQ_URL')
+from cases.models import CaseAssignment, Case, Detainee
+from users.models import User, LawyerProfile, ApplicantProfile, LskAdminProfile
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -99,19 +101,279 @@ class CaseSerializer(serializers.ModelSerializer):
         return data
 
 
+
 class CPDPointSerializer(serializers.ModelSerializer):
     class Meta:
         model = CPDPoint
         fields = '__all__'
 
 
+
 class CaseAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseAssignment
         fields = '__all__'
+    class Meta:
+        model = CaseAssignment
+        fields = '__all__'
+
 
 
 class DetaineeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Detainee
         fields = '__all__'
+    class Meta:
+        model = Detainee
+        fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+    practice_number = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    password = serializers.CharField(write_only=True)
+    latitude = serializers.SerializerMethodField()
+    longitude = serializers.SerializerMethodField()
+    profile_id = serializers.SerializerMethodField()
+    verified = serializers.SerializerMethodField()
+    practising_status = serializers.SerializerMethodField()
+    work_place = serializers.SerializerMethodField()
+    physical_address = serializers.SerializerMethodField()
+    cpd_points_2025 = serializers.SerializerMethodField()
+    criminal_law = serializers.SerializerMethodField()
+    constitutional_law = serializers.SerializerMethodField()
+    corporate_law = serializers.SerializerMethodField()
+    family_law = serializers.SerializerMethodField()
+    pro_bono_legal_services = serializers.SerializerMethodField()
+    alternative_dispute_resolution = serializers.SerializerMethodField()
+    regional_and_international_law = serializers.SerializerMethodField()
+    mining_law = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'first_name', 'last_name', 'email', 'role', 'phone_number', 'image',
+            'is_deleted', 'created_at', 'updated_at', 'password', 'practice_number',
+            'profile_id', 'verified', 'practising_status', 'work_place',
+            'latitude', 'longitude', 'physical_address', 'cpd_points_2025', 'criminal_law',
+            'constitutional_law', 'corporate_law', 'family_law', 'pro_bono_legal_services',
+            'alternative_dispute_resolution', 'regional_and_international_law', 'mining_law',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request', None)
+        if not request or request.query_params.get('role') != 'lawyer':
+            self.fields.pop('practice_number', None)
+
+    def get_lawyer_profile(self, user):
+        if user.role == "lawyer":
+            try:
+                return user.lawyer_profile
+            except LawyerProfile.DoesNotExist:
+                return None
+        return None
+
+    def get_profile_id(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.profile_id if profile else None
+
+    def get_latitude(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return str(profile.latitude) if profile and profile.latitude else None
+
+    def get_longitude(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return str(profile.longitude) if profile and profile.longitude else None
+
+    def get_verified(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.verified if profile else None
+
+    def get_practising_status(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.practising_status if profile else None
+
+    def get_work_place(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.work_place if profile else None
+
+    def get_physical_address(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.physical_address if profile else None
+
+    def get_cpd_points_2025(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.cpd_points_2025 if profile else None
+
+    def get_criminal_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.criminal_law if profile else None
+
+    def get_constitutional_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.constitutional_law if profile else None
+
+    def get_corporate_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.corporate_law if profile else None
+
+    def get_family_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.family_law if profile else None
+
+    def get_pro_bono_legal_services(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.pro_bono_legal_services if profile else None
+
+    def get_alternative_dispute_resolution(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.alternative_dispute_resolution if profile else None
+
+    def get_regional_and_international_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.regional_and_international_law if profile else None
+
+    def get_mining_law(self, obj):
+        profile = self.get_lawyer_profile(obj)
+        return profile.mining_law if profile else None
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        practice_number = validated_data.pop('practice_number', None)
+
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=password,
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            role=validated_data.get('role', 'lawyer'),
+            phone_number=validated_data.get('phone_number', ''),
+            image=validated_data.get('image', None),
+            is_deleted=validated_data.get('is_deleted', False),
+        )
+
+        if user.role == 'lawyer' and practice_number:
+            LawyerProfile.objects.create(
+                user=user,
+                practice_number=practice_number,
+            )
+
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        practice_number = validated_data.pop('practice_number', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        if instance.role == 'lawyer':
+            profile, created = LawyerProfile.objects.get_or_create(user=instance)
+            if practice_number is not None:
+                profile.practice_number = practice_number
+                profile.save()
+
+        return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.role != "lawyer":
+            lawyer_fields = [
+                'profile_id', 'verified', 'practising_status', 'practice_number', 'work_place',
+                'latitude', 'longitude', 'physical_address', 'cpd_points_2025', 'criminal_law',
+                'constitutional_law', 'corporate_law', 'family_law', 'pro_bono_legal_services',
+                'alternative_dispute_resolution', 'regional_and_international_law', 'mining_law',
+            ]
+            for field in lawyer_fields:
+                data.pop(field, None)
+        return data
+
+
+class LawyerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = LawyerProfile
+        fields = '__all__'
+
+
+class LskAdminSerializer(serializers.ModelSerializer):
+    lawyer = LawyerProfileSerializer(read_only=True)
+
+    class Meta:
+        model = LskAdminProfile
+        fields = '__all__'
+
+
+class ApplicantSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ApplicantProfile
+        fields = '__all__'
+
+
+class LawyerRegistrationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    practice_number = serializers.CharField(required=True)
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'practice_number', 'first_name', 'last_name']
+        extra_kwargs = {'role': {'default': 'lawyer'}}
+    def validate_practice_number(self, value):
+        value = value.strip().upper()
+        try:
+            lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=value)
+            if lawyer_profile.practice_number != value:
+                lawyer_profile.practice_number = value
+                lawyer_profile.save()
+            return value
+        except LawyerProfile.DoesNotExist:
+            raise serializers.ValidationError("No lawyer found with this practice number.")
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        practice_number = validated_data.pop('practice_number')
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+        email = validated_data.pop('email')
+        lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=practice_number.strip().upper())
+        user = lawyer_profile.user
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.role = 'lawyer'
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+        lawyer_profile.verified = True
+        lawyer_profile.save()
+        return user
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class VerifyCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=4)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        return attrs
+
