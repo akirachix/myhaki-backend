@@ -16,6 +16,7 @@ certifi==2025.8.3
 cffi==2.0.0
 charset-normalizer==3.4.3
 click==8.2.1
+django==5.2.6
 click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.3.0
@@ -27,7 +28,9 @@ cymem==2.0.11
 django==5.0.6
 django-cors-headers==4.7.0
 django-filter==25.1
+django-filter==25.1
 djangorestframework==3.16.1
+dotenv==0.9.9
 docstring-parser==0.17.0
 fastapi==0.116.1
 google-adk==1.13.0
@@ -89,6 +92,8 @@ packaging==25.0
 pathspec==0.12.1
 pillow==11.3.0
 platformdirs==4.4.0
+psycopg==3.2.10
+psycopg2-binary==2.9.10
 preshed==3.0.10
 prompt-toolkit==3.0.52
 proto-plus==1.26.1

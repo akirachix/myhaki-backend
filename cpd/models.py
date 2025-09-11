@@ -16,6 +16,6 @@ class CPDPoint(models.Model):
         verbose_name_plural = 'CPD Points'
 
     def __str__(self):
-        return f"CPD {self.cpd_id} for Lawyer {self.lawyer_id} - {self.points_earned} points"
+        return f"CPD {self.cpd_id} for Lawyer {self.lawyer} - {self.points_earned} points"
     
     

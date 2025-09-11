@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from cpd.models import CPDPoint
+from cases.models import CaseAssignment, Detainee, Case
 from cases.models import CaseAssignment, Case, Detainee
 from users.models import User, LawyerProfile
 import requests
@@ -9,12 +10,15 @@ import os
 from dotenv import load_dotenv
 from cases.tasks import async_assign_case
 
+
 load_dotenv()
 
 TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
 TRANSLATE_PLUS_URL = os.getenv('TRANSLATE_PLUS_URL')
 LOCATIONIQ_URL = os.getenv('LOCATIONIQ_URL')
+from cases.models import CaseAssignment, Case, Detainee
+from users.models import User, LawyerProfile, ApplicantProfile, LskAdminProfile
 
 class LawyerProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name')
@@ -134,19 +138,28 @@ class CaseSerializer(serializers.ModelSerializer):
         return data
 
 
+
 class CPDPointSerializer(serializers.ModelSerializer):
     class Meta:
         model = CPDPoint
         fields = '__all__'
 
 
+
 class CaseAssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseAssignment
+        fields = '__all__'
     class Meta:
         model = CaseAssignment
         fields = '__all__'
 
 
+
 class DetaineeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Detainee
+        fields = '__all__'
     class Meta:
         model = Detainee
         fields = '__all__'
@@ -324,17 +337,14 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
     practice_number = serializers.CharField(required=True)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
-
     class Meta:
         model = User
         fields = ['email', 'password', 'practice_number', 'first_name', 'last_name']
         extra_kwargs = {'role': {'default': 'lawyer'}}
-
     def validate_practice_number(self, value):
-        value = value.strip().upper() 
+        value = value.strip().upper()
         try:
             lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=value)
-
             if lawyer_profile.practice_number != value:
                 lawyer_profile.practice_number = value
                 lawyer_profile.save()
@@ -342,9 +352,24 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
         except LawyerProfile.DoesNotExist:
             raise serializers.ValidationError("No lawyer found with this practice number.")
 
+
     def create(self, validated_data):
         password = validated_data.pop('password')
         practice_number = validated_data.pop('practice_number')
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+        email = validated_data.pop('email')
+        lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=practice_number.strip().upper())
+        user = lawyer_profile.user
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.role = 'lawyer'
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+        lawyer_profile.verified = True
+        lawyer_profile.save()
         first_name = validated_data.pop('first_name')
         last_name = validated_data.pop('last_name')
         email = validated_data.pop('email')
@@ -385,3 +410,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
         return attrs
+class ApplicantSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = ApplicantProfile
+        fields = '__all__'

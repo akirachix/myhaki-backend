@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
+
 TRANSLATE_PLUS_URL = os.getenv("TRANSLATE_PLUS_URL")
 LOCATIONIQ_URL = os.getenv("LOCATIONIQ_URL")
 
@@ -86,15 +87,14 @@ load_dotenv()
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE'),
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),  # fallback to sqlite3 if not set
+        'NAME': os.getenv('DB_NAME', 'db.sqlite3'),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
-
 AUTH_USER_MODEL = 'users.User'
 
 # DATABASES = {
@@ -174,14 +174,14 @@ TEMPLATES = [
     },
 ]
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+
+
+SECRET_KEY = os.getenv('SECRET_KEY', 'fake-secret-key-for-tests-12345')
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'  
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))  
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))  
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-
-

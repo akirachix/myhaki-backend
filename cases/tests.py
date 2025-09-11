@@ -1,3 +1,24 @@
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from django.contrib.auth.models import User
+from cases.models import Case, Detainee
+from datetime import date
+from unittest.mock import patch
+import json
+from django.contrib.auth import get_user_model
+
+from unittest.mock import Mock
+
+User = get_user_model()
+class MyTestCase(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(password="pass123",email="testuser@example.com")
+
+    def test_example(self):
+        self.assertTrue(self.user.is_authenticated)
 # from django.test import TestCase
 # from django.urls import reverse
 # from rest_framework import status
@@ -16,6 +37,40 @@
 
 #     def json(self):
 #         return self.json_data
+
+def mock_translate_side_effect(*args, **kwargs):
+    payload = kwargs.get('json', {})
+    text = payload.get('text', '')
+
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    
+    if text == "Aliiba mahindi ya jirani usiku wa manane.":
+        mock_resp.json.return_value = {
+            "translations": {
+                "translation": "He stole his neighbor's corn in the middle of the night."
+            }
+        }
+    elif text == "Kituo cha Polisi Machakos":
+        mock_resp.json.return_value = {
+            "translations": {
+                "translation": "Machakos Police Station"
+            }
+        }
+    elif text == json.dumps({"count": 3, "description": "watoto watatu"}):
+        mock_resp.json.return_value = {
+            "translations": {
+                "translation": json.dumps({"count": 3, "description": "three children"})
+            }
+        }
+    else:
+        mock_resp.json.return_value = {
+            "translations": {
+                "translation": text
+            }
+        }
+    
+    return mock_resp
 
 
 # def mock_translate_side_effect(*args, **kwargs):
@@ -48,6 +103,19 @@
 #         }, 200)
 
 
+class CaseAPITest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(password='testpass', email="testuser@example.com",)
+        self.detainee = Detainee.objects.create(
+            first_name='Jane',
+            last_name='Doe',
+            user=self.user,
+            id_number='ID123456',
+            gender='female',
+            relation_to_applicant='family'
+        )
+        
+        self.client.login(username='testuser', password='testpass')
 # class CaseAPITest(APITestCase):
 #     def setUp(self):
 #         self.user = User.objects.create_user(username='testuser', password='testpass')
