@@ -32,7 +32,9 @@ class LawyerProfileSerializer(serializers.ModelSerializer):
 class DetaineeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Detainee
-        fields = ['detainee_id', 'first_name', 'last_name', 'id_number', 'gender']
+        fields = '__all__'
+
+
 
 class CaseSerializer(serializers.ModelSerializer):
     detainee = DetaineeSerializer(read_only=True)
@@ -154,15 +156,6 @@ class CaseAssignmentSerializer(serializers.ModelSerializer):
         model = CaseAssignment
         fields = '__all__'
 
-
-
-class DetaineeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Detainee
-        fields = '__all__'
-    class Meta:
-        model = Detainee
-        fields = '__all__'
 
 
 class UserSerializer(serializers.ModelSerializer):
