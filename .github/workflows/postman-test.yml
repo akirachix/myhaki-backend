@@ -31,9 +31,9 @@ jobs:
           echo "COL_UID: $COL_UID"
           echo "ENV_UID: $ENV_UID"
           echo "POSTMAN_API_KEY starts with: ${POSTMAN_API_KEY:0:5}..."
-          if [[ -z "$COL_UID" ]]; then echo "❌ COL_UID is empty!"; exit 1; fi
-          if [[ -z "$ENV_UID" ]]; then echo "❌ ENV_UID is empty!"; exit 1; fi
-          if [[ -z "$POSTMAN_API_KEY" ]]; then echo "❌ POSTMAN_API_KEY is empty!"; exit 1; fi
+          if [[ -z "$COL_UID" ]]; then echo "COL_UID is empty!"; exit 1; fi
+          if [[ -z "$ENV_UID" ]]; then echo "ENV_UID is empty!"; exit 1; fi
+          if [[ -z "$POSTMAN_API_KEY" ]]; then echo "POSTMAN_API_KEY is empty!"; exit 1; fi
 
       - name: Login to Postman CLI
         run: postman login --with-api-key "$POSTMAN_API_KEY"
