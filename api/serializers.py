@@ -9,6 +9,7 @@ from django.conf import settings
 import os
 from dotenv import load_dotenv
 from cases.tasks import async_assign_case
+import logging
 
 
 load_dotenv()
@@ -37,7 +38,8 @@ class DetaineeSerializer(serializers.ModelSerializer):
 
 
 class CaseSerializer(serializers.ModelSerializer):
-    detainee = DetaineeSerializer(read_only=True)
+    detainee = serializers.PrimaryKeyRelatedField(queryset=Detainee.objects.all(), required=True )
+    detainee_details = DetaineeSerializer(source='detainee', read_only=True)
     assigned_lawyer = LawyerProfileSerializer(source='assignments.first.lawyer', read_only=True)
     predicted_case_type = serializers.CharField(required=False)
     predicted_urgency_level = serializers.CharField(required=False)
@@ -113,7 +115,12 @@ class CaseSerializer(serializers.ModelSerializer):
         validated_data['predicted_urgency_level'] = predicted_urgency
 
         case = super().create(validated_data)
-        async_assign_case.delay(case.case_id)
+        try:
+            async_assign_case.delay(case.case_id)
+        except Exception as e:
+            logger = logging.getLogger("django")
+            logger.error(f"Celery async_assign_case failed for case_id {case.case_id}: {e}")
+            
         return case
 
     def update(self, instance, validated_data):
@@ -323,7 +330,6 @@ class UserSerializer(serializers.ModelSerializer):
                 data.pop(field, None)
         return data
 
-
 class LawyerRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
@@ -344,8 +350,6 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
             return value
         except LawyerProfile.DoesNotExist:
             raise serializers.ValidationError("No lawyer found with this practice number.")
-
-
     def create(self, validated_data):
         password = validated_data.pop('password')
         practice_number = validated_data.pop('practice_number')
@@ -363,25 +367,6 @@ class LawyerRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         lawyer_profile.verified = True
         lawyer_profile.save()
-        first_name = validated_data.pop('first_name')
-        last_name = validated_data.pop('last_name')
-        email = validated_data.pop('email')
-
-
-        lawyer_profile = LawyerProfile.objects.get(practice_number__iexact=practice_number.strip().upper())
-
-        user = lawyer_profile.user
-        user.email = email
-        user.first_name = first_name
-        user.last_name = last_name
-        user.role = 'lawyer'
-        user.is_active = True
-        user.set_password(password)
-        user.save()
-
-        lawyer_profile.verified = True
-        lawyer_profile.save()
-
         return user
 
 
