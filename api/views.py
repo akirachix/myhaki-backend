@@ -162,6 +162,7 @@ class LawyerRegistrationView(APIView):
 otp_storage = {}
 
 class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -187,6 +188,7 @@ class ForgotPasswordView(APIView):
 
 
 class VerifyCodeView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = VerifyCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -200,6 +202,7 @@ class VerifyCodeView(APIView):
 
 
 class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
