@@ -154,7 +154,7 @@ class CPDPointSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CPDPoint
-        fields = ['cpd_id', 'user', 'case', 'description', 'points_earned', 'total_points', 'created_at', 'updated_at']
+        fields = ['cpd_id', 'lawyer', 'case', 'description', 'points_earned', 'total_points', 'created_at', 'updated_at']
 
     def get_total_points(self, obj):
         return obj.points_earned + obj.lawyer.cpd_points_2025
