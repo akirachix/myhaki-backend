@@ -199,11 +199,11 @@ class UserSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get('request', None)
-        if not request or request.query_params.get('role') != 'lawyer':
+        if request and request.query_params.get('role') not in ['lawyer', 'lsk_admin']:
             self.fields.pop('practice_number', None)
 
     def get_lawyer_profile(self, user):
-        if user.role == "lawyer":
+        if user.role in ['lawyer', 'lsk_admin']:
             try:
                 return user.lawyer_profile
             except LawyerProfile.DoesNotExist:
@@ -289,13 +289,12 @@ class UserSerializer(serializers.ModelSerializer):
             is_deleted=validated_data.get('is_deleted', False),
         )
 
-        if user.role == 'lawyer' and practice_number:
-            LawyerProfile.objects.create(
-                user=user,
-                practice_number=practice_number,
+    if practice_number and User.role in ['lawyer', 'lsk_admin']:
+            LawyerProfile.objects.get_or_create(
+                user=User,
+                defaults={'practice_number': practice_number.strip()}
             )
 
-        return user
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
@@ -309,7 +308,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.save()
 
-        if instance.role == 'lawyer':
+        if instance.role in ['lawyer', 'lsk_admin']:
             profile, created = LawyerProfile.objects.get_or_create(user=instance)
             if practice_number is not None:
                 profile.practice_number = practice_number
@@ -319,7 +318,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if instance.role != "lawyer":
+        if instance.role not in ['lawyer', 'lsk_admin']:
             lawyer_fields = [
                 'profile_id', 'verified', 'practising_status', 'practice_number', 'work_place',
                 'latitude', 'longitude', 'physical_address', 'cpd_points_2025', 'criminal_law',
