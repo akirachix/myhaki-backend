@@ -162,6 +162,7 @@ class LawyerRegistrationView(APIView):
 otp_storage = {}
 
 class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -187,6 +188,7 @@ class ForgotPasswordView(APIView):
 
 
 class VerifyCodeView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = VerifyCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -200,6 +202,7 @@ class VerifyCodeView(APIView):
 
 
 class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -249,7 +252,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
-from users.models import LawyerProfile 
+from users.models import LawyerProfile  
 
 User = get_user_model()
 
@@ -308,19 +311,3 @@ class LoginView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name,
         })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

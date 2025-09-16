@@ -149,10 +149,15 @@ class CaseSerializer(serializers.ModelSerializer):
 
 
 class CPDPointSerializer(serializers.ModelSerializer):
+    total_points = serializers.SerializerMethodField()
+    
+
     class Meta:
         model = CPDPoint
-        fields = '__all__'
+        fields = ['cpd_id', 'user', 'case', 'description', 'points_earned', 'total_points', 'created_at', 'updated_at']
 
+    def get_total_points(self, obj):
+        return obj.points_earned + obj.lawyer.cpd_points_2025
 
 
 class CaseAssignmentSerializer(serializers.ModelSerializer):
