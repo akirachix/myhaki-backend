@@ -157,7 +157,13 @@ class CPDPointSerializer(serializers.ModelSerializer):
         fields = ['cpd_id', 'lawyer', 'case', 'description', 'points_earned', 'total_points', 'created_at', 'updated_at']
 
     def get_total_points(self, obj):
-        return obj.points_earned + obj.lawyer.cpd_points_2025
+        if obj.lawyer is None:
+            return obj.points_earned if obj.points_earned is not None else 0
+        else:
+         cpd_points = getattr(obj.lawyer, 'cpd_points_2025', 0)
+        points_earned = obj.points_earned if obj.points_earned is not None else 0
+        return points_earned + cpd_points
+
 
 
 class CaseAssignmentSerializer(serializers.ModelSerializer):
