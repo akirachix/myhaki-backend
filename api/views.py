@@ -162,6 +162,7 @@ class LawyerRegistrationView(APIView):
 otp_storage = {}
 
 class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -187,6 +188,7 @@ class ForgotPasswordView(APIView):
 
 
 class VerifyCodeView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = VerifyCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -200,6 +202,7 @@ class VerifyCodeView(APIView):
 
 
 class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -240,16 +243,71 @@ class UserSignupView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 
+
+from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
+from users.models import LawyerProfile  
+
+User = get_user_model()
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        practice_number = request.data.get('practice_number')
         email = request.data.get('email') or request.data.get('username')
         password = request.data.get('password')
-        user = authenticate(request, username=email, password=password)
-        
-        if user is not None:
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'email': user.email})
+        if not password:
+            return Response({'error': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = None
+        if practice_number:
+            try:
+                lawyer_profile = LawyerProfile.objects.get(
+                    practice_number__iexact=practice_number.strip()
+                )
+                user = lawyer_profile.user
+                if user.role != 'lawyer':
+                    user = None
+            except LawyerProfile.DoesNotExist:
+                user = None
+
+            if user and not user.check_password(password):
+                user = None
+
+       
+        elif email:
+            user = authenticate(request, username=email, password=password)
+            if user and user.role == 'lawyer':
+                user = None
+
         else:
+            return Response({
+                'error': 'Either practice_number (for lawyers) or email/username (for applicants and lsk_admin) must be provided'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    
+        if user is None:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+     
+        if user.role not in ['applicant', 'lawyer', 'lsk_admin']:
+            return Response({'error': 'Unauthorized role'}, status=status.HTTP_403_FORBIDDEN)
+
+     
+        token, created = Token.objects.get_or_create(user=user)
+
+        return Response({
+            'token': token.key,
+            'email': user.email,
+            'role': user.role,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })

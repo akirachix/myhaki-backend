@@ -38,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=500)
     last_name = models.CharField(max_length=500)
     email = models.EmailField(max_length=1000, unique=True, null=True)
-    role = models.CharField(max_length=100, choices=ROLE_CHOICES, default='lawyer')
+    role = models.CharField(max_length=100, choices=ROLE_CHOICES, default='applicant')
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     image = models.ImageField(upload_to='profiles/', null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
