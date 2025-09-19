@@ -24,6 +24,7 @@ from users.permissions import IsAdmin, IsUser
 from django.shortcuts import render
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 
 from users.permissions import IsAdmin, IsUser
 
@@ -174,8 +175,7 @@ class ForgotPasswordView(APIView):
             return Response({"detail": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = str(random.randint(1000, 9999))
-        otp_storage[email] = otp
-
+        cache.set(f'otp_{email}', otp, timeout=300)
         send_mail(
             'Your OTP for password reset',
             f'Your OTP is {otp}',
@@ -195,8 +195,11 @@ class VerifyCodeView(APIView):
         email = serializer.validated_data['email']
         otp = serializer.validated_data['otp']
 
-        if otp_storage.get(email) != otp:
+        cached_otp = cache.get(f'otp_{email}')
+        if cached_otp != otp:
             return Response({"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        cache.delete(f'otp_{email}')
 
         return Response({"detail": "OTP verified."})
 
@@ -216,7 +219,7 @@ class ResetPasswordView(APIView):
 
         user.set_password(password)
         user.save()
-        otp_storage.pop(email, None)
+        cache.delete(f'otp_{email}')
         return Response({"detail": "Password reset successful."})
 
 
