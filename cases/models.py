@@ -100,12 +100,14 @@ class Case(models.Model):
         max_length=50,
         choices=[('in_progress', 'In Progress'), ('handled', 'Handled'), ('arraignment', 'Arraignment'),
                  ('bail', 'Bail'), ('trial', 'Trial'), ('completed', 'Completed')],
-        null=False
+        null=False,
+        default='In Progress'
     )
     status = models.CharField(
         max_length=50,
         choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')],
-        null=False
+        null=False,
+        default='Pending'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
