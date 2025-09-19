@@ -65,7 +65,7 @@ class Case(models.Model):
     case_description = models.TextField()
     predicted_case_type = models.CharField(
         max_length=50,
-        choices=[('criminal', 'Criminal'), ('civil', 'Civil'), ('constitutional and human rights', 'Constitutional and Human Rights'), ('family', 'Family'), ('labor', 'Labor'), ('property', 'Property'), ('other', 'Other')],
+        choices=[('criminal', 'Criminal'),('Environment','environment'),('Employment','employment'), ('civil', 'Civil'), ('constitutional and human rights', 'Constitutional and Human Rights'), ('family', 'Family'), ('labor', 'Labor'), ('property', 'Property'), ('other', 'Other')],
         null=True,
         blank=True
     )
