@@ -196,9 +196,10 @@ class VerifyCodeView(APIView):
         otp = serializer.validated_data['otp']
 
         cached_otp = cache.get(f'otp_{email}')
-        if cached_otp != otp:
-            return Response({"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
-        
+        if cached_otp is None:
+          return Response({"detail": "OTP has expired, please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+        elif cached_otp != otp:
+          return Response({"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         cache.delete(f'otp_{email}')
 
         return Response({"detail": "OTP verified."})
