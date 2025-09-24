@@ -299,13 +299,13 @@ class UserSerializer(serializers.ModelSerializer):
             image=validated_data.get('image', None),
             is_deleted=validated_data.get('is_deleted', False),
         )
-
+        return user
     if practice_number and User.role in ['lawyer', 'lsk_admin']:
             LawyerProfile.objects.get_or_create(
                 user=User,
                 defaults={'practice_number': practice_number.strip()}
             )
-
+             
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
