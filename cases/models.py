@@ -2,29 +2,43 @@ from django.db import models
 from django.conf import settings
 from django.db.models import JSONField
 from users.models import LawyerProfile
+from datetime import timedelta
 
-
-
-
+User = settings.AUTH_USER_MODEL 
 
 
 class CaseAssignment(models.Model):
-   assignment_id = models.AutoField(primary_key=True)
-   lawyer = models.ForeignKey(
-       LawyerProfile,
-       on_delete=models.CASCADE,
-       related_name='assignments',
-       default=1
-   )
-   case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
-   is_assigned = models.BooleanField(default=True)
-   assign_date = models.DateTimeField(auto_now_add=True)
-   reject_reason = models.TextField(null=True, blank=True)
-   confirmed_by_applicant = models.BooleanField(default=False)
-   confirmed_by_lawyer = models.BooleanField(default=False)
-   created_at = models.DateTimeField(auto_now_add=True)
-   updated_at = models.DateTimeField(auto_now=True)
+    ASSIGNMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('reassigned', 'Reassigned'), 
+        ('handled', 'Handled') 
+    ]
 
+    assignment_id = models.AutoField(primary_key=True)
+    lawyer = models.ForeignKey(
+        LawyerProfile,
+        on_delete=models.CASCADE,
+        related_name='assignments',
+        default=1 
+    )
+    case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
+    is_assigned = models.BooleanField(default=True)
+    assign_date = models.DateTimeField(auto_now_add=True)
+    reject_reason = models.TextField(null=True, blank=True)
+    confirmed_by_applicant = models.BooleanField(default=False)
+    confirmed_by_lawyer = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=ASSIGNMENT_STATUS_CHOICES,
+        default='pending',
+        null=False
+    )
+    reassigned_automatically = models.BooleanField(default=False) 
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Detainee(models.Model):
@@ -32,12 +46,10 @@ class Detainee(models.Model):
    first_name = models.CharField(max_length=100, null=False, blank=False)
    last_name = models.CharField(max_length=100, null=False, blank=False)
 
-
    user = models.ForeignKey(
-       settings.AUTH_USER_MODEL,
+       User,
        on_delete=models.CASCADE,
        null=True,
-       
        blank=True,
        limit_choices_to={'role': 'applicant'}
    )
@@ -87,37 +99,35 @@ class Case(models.Model):
         null=True,
         blank=True
     )
-
     monthly_income = models.CharField(
         max_length=20,
         choices=[('less_than_30000', 'Less than 30000'), ('greater_than_30000', 'Greater than 30000')],
         null=True,
         blank=True
     )
-
-    dependents = JSONField(null=True, blank=True, default=dict)
+    dependents = JSONField(null=True, blank=True, default=dict) 
     stage = models.CharField(
         max_length=50,
         choices=[('in_progress', 'In Progress'), ('handled', 'Handled'), ('arraignment', 'Arraignment'),
                  ('bail', 'Bail'), ('trial', 'Trial'), ('completed', 'Completed')],
         null=False,
-        default='In Progress'
+        default='in_progress' 
     )
     status = models.CharField(
         max_length=50,
-        choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected')],
+        choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected'), 
+                 ('completed', 'Completed'), ('assignment_failed', 'Assignment Failed')], 
         null=False,
-        default='Pending'
+        default='pending'
     )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['detainee_id', 'case_description', 'trial_date'],
+                fields=['detainee', 'case_description', 'trial_date'], 
                 name='unique_case_per_detainee_description_trialdate'
             )
         ]
-
-
