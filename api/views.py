@@ -37,9 +37,7 @@ from users.models import LawyerProfile
 from users.permissions import IsAdmin, IsUser
 from .permissions import IsAdminOrReadOnly 
 from cases.services import update_case_and_cpd, assign_case_automatically
-
 from api.permissions import IsAdminOrReadOnly, IsAdminOrIsAssignedLawyer 
-
 from api.serializers import CaseSerializer, CaseAssignmentSerializer 
 from cases.models import Case, CaseAssignment
 from users.models import LawyerProfile

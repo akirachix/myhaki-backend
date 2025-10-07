@@ -27,6 +27,7 @@ mypy-extensions==1.1.0
 packaging==25.0
 pathspec==0.12.1
 pillow==11.3.0
+pip==25.2
 platformdirs==4.4.0
 prompt-toolkit==3.0.52
 psycopg==3.2.10
@@ -36,9 +37,11 @@ python-decouple==3.8
 python-dotenv==1.1.1
 pytz==2025.2
 pyyaml==6.0.2
+redis==6.4.0
 referencing==0.36.2
 requests==2.32.5
 rpds-py==0.27.1
+setuptools==80.9.0
 six==1.17.0
 sqlparse==0.5.3
 tomli==2.2.1
@@ -48,4 +51,5 @@ uritemplate==4.2.0
 urllib3==2.5.0
 vine==5.1.0
 wcwidth==0.2.13
+wheel==0.45.1
 whitenoise==6.10.0

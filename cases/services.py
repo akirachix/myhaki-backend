@@ -88,7 +88,7 @@ def assign_case_automatically(case_id):
         in_progress_count = CaseAssignment.objects.filter(
             lawyer=lawyer,
             status='accepted',
-            case__stage__in=['in_progress', 'handled', 'arraignment', 'bail', 'trial']
+            case__stage__in=['in_progress', 'handled', 'arraignment', 'bail', 'trial', 'completed', 'closed']
         ).count()
         if in_progress_count < MAX_IN_PROGRESS_CASES:
             available_lawyers.append(lawyer)
@@ -137,8 +137,8 @@ def update_case_and_cpd(assignment: CaseAssignment):
         return
 
     if assignment.confirmed_by_lawyer and assignment.confirmed_by_applicant:
-        case.stage = 'completed'
-        case.status = 'completed'
+        case.stage = 'closed'
+        case.status = 'closed'
         case.save()
         
         CaseAssignment.objects.filter(case=case).exclude(assignment_id=assignment.assignment_id).update(status='handled')

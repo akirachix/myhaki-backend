@@ -18,6 +18,7 @@ TRANSLATE_PLUS_API_KEY = os.getenv('TRANSLATE_PLUS_API_KEY')
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
 TRANSLATE_PLUS_URL = os.getenv('TRANSLATE_PLUS_URL')
 LOCATIONIQ_URL = os.getenv('LOCATIONIQ_URL')
+AI_AGENT_URL = os.getenv('AI_AGENT_URL')
 
 
 class LawyerProfileSerializer(serializers.ModelSerializer):
@@ -44,13 +45,28 @@ class DetaineeSerializer(serializers.ModelSerializer):
 class CaseSerializer(serializers.ModelSerializer):
     detainee = serializers.PrimaryKeyRelatedField(queryset=Detainee.objects.all(), required=True)
     detainee_details = DetaineeSerializer(source='detainee', read_only=True)
+    assigned_lawyer_details = serializers.SerializerMethodField(read_only=True)
     predicted_case_type = serializers.CharField(required=False, allow_blank=True, read_only=True)
     predicted_urgency_level = serializers.CharField(required=False, allow_blank=True, read_only=True)
 
     class Meta:
         model = Case
         fields = '__all__'
-        read_only_fields = ['predicted_case_type', 'predicted_urgency_level', 'status', 'assignment_attempts', 'stage'] 
+        read_only_fields = ['predicted_case_type', 'predicted_urgency_level', 'assignment_attempts'] 
+    
+    def get_assigned_lawyer_details(self, obj):
+        """
+        Returns the lawyer assigned to this case via an active CaseAssignment.
+        """
+        assignment = CaseAssignment.objects.filter(
+            case=obj,
+            is_assigned=True,
+            status__in=['pending', 'accepted']  
+        ).select_related('lawyer', 'lawyer__user').first()
+
+        if assignment and assignment.lawyer:
+            return LawyerProfileSerializer(assignment.lawyer).data
+        return None
 
     def translate_text(self, text):
         if not text:
@@ -90,13 +106,13 @@ class CaseSerializer(serializers.ModelSerializer):
 
     def classify_case_ai(self, case_description, trial_date):
         """Call AI agent for predicted case type and urgency"""
-        if not case_description:
-            logger.warning("No case description provided for AI classification. Defaulting to 'other', 'medium'.")
-            return "other", "medium"
-
+        url = AI_AGENT_URL
+        if not url:
+            logger.error("AI_AGENT_URL is not set in environment variables.")
+            return "criminal", "medium"
         try:
             response = requests.post(
-                "http://127.0.0.1:8080/predict/", 
+                url,
                 json={
                     "case_description": case_description,
                     "trial_date": str(trial_date) if trial_date else None
@@ -111,10 +127,30 @@ class CaseSerializer(serializers.ModelSerializer):
                 urgency = prediction.get("urgency", "medium").lower()
                 return case_type, normalize_urgency(urgency)
             else:
-                logger.error(f"AI agent returned status {response.status_code}: {response.text}")
+                return self._fallback_classify_case_ai(case_description)  
         except requests.exceptions.RequestException as e:
             logger.error(f"AI agent prediction request failed: {e}")
-        return "other", "medium" 
+        return self._fallback_classify_case_ai(case_description) 
+       
+    def _fallback_classify_case_ai(self, text):
+        text_lower = text.lower()
+        
+        if any(word in text_lower for word in ['rape', 'sexual assault', 'molestation', 'murder', 'terror']):
+            return 'criminal', 'high'
+        elif any(word in text_lower for word in ['theft', 'robbery', 'assault', 'drugs', 'criminal']):
+            return 'criminal', 'high'
+        elif any(word in text_lower for word in ['divorce', 'custody', 'family']):
+            return 'family', 'high'
+        elif any(word in text_lower for word in ['contract', 'property', 'dispute', 'civil', 'corporate']):
+            return 'corporate', 'medium'
+        elif any(word in text_lower for word in ['human rights', 'constitutional']):
+            return 'constitutional and human rights', 'high'
+        elif any(word in text_lower for word in ['labour', 'employment', 'worker']):
+            return 'labor', 'medium'
+        elif any(word in text_lower for word in ['environment', 'pollution']):
+            return 'environment', 'medium'
+        else:
+            return 'criminal', 'medium'
 
     def create(self, validated_data):
         if 'case_description' in validated_data:
@@ -146,7 +182,7 @@ class CaseSerializer(serializers.ModelSerializer):
         case = super().create(validated_data)
 
         try:
-            case.status = 'pending_assignment'
+            case.status = 'pending'
             case.assignment_attempts = 0 
             case.save()
             
@@ -178,9 +214,12 @@ class CaseSerializer(serializers.ModelSerializer):
             validated_data['longitude'] = lon
 
         reclassify = False
-        if 'case_description' in validated_data and validated_data['case_description'] != instance.case_description:
+        new_description = validated_data.get('case_description', instance.case_description)
+        new_trial_date = validated_data.get('trial_date', instance.trial_date)
+
+        if new_description != instance.case_description:
             reclassify = True
-        if 'trial_date' in validated_data and validated_data['trial_date'] != instance.trial_date:
+        if new_trial_date != instance.trial_date:
             reclassify = True
 
         if reclassify:
@@ -364,6 +403,8 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         practice_number = validated_data.pop('practice_number', None)
+        cpd_points_2025 = validated_data.pop('cpd_points_2025', None)
+        
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -377,6 +418,9 @@ class UserSerializer(serializers.ModelSerializer):
             profile, created = LawyerProfile.objects.get_or_create(user=instance)
             if practice_number is not None:
                 profile.practice_number = practice_number
+                profile.save()
+            if cpd_points_2025 is not None:
+                profile.cpd_points_2025 = cpd_points_2025 + 1
                 profile.save()
 
         return instance

@@ -8,20 +8,19 @@ User = settings.AUTH_USER_MODEL
 
 
 class CaseAssignment(models.Model):
+    assignment_id = models.AutoField(primary_key=True)
     ASSIGNMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
         ('reassigned', 'Reassigned'), 
-        ('handled', 'Handled') 
+        ('closed', 'Closed') 
     ]
 
-    assignment_id = models.AutoField(primary_key=True)
     lawyer = models.ForeignKey(
-        LawyerProfile,
+        'users.LawyerProfile',
         on_delete=models.CASCADE,
-        related_name='assignments',
-        default=1 
+        related_name='cases_assigned'
     )
     case = models.ForeignKey('cases.Case', on_delete=models.CASCADE, related_name='assignments')
     is_assigned = models.BooleanField(default=True)
@@ -108,15 +107,28 @@ class Case(models.Model):
     dependents = JSONField(null=True, blank=True, default=dict) 
     stage = models.CharField(
         max_length=50,
-        choices=[('in_progress', 'In Progress'), ('handled', 'Handled'), ('arraignment', 'Arraignment'),
-                 ('bail', 'Bail'), ('trial', 'Trial'), ('completed', 'Completed')],
+        choices=[
+            ('in_progress', 'In Progress'),
+            ('handled', 'Handled'),
+            ('arraignment', 'Arraignment'),
+            ('bail', 'Bail'),
+            ('trial', 'Trial'),
+            ('completed', 'Completed'),
+            ('closed', 'Closed'),
+        ],
         null=False,
-        default='in_progress' 
+        default='in_progress'
     )
     status = models.CharField(
         max_length=50,
-        choices=[('pending', 'Pending'), ('accepted', 'Accepted'), ('rejected', 'Rejected'), 
-                 ('completed', 'Completed'), ('assignment_failed', 'Assignment Failed')], 
+        choices=[
+            ('pending', 'Pending'),
+            ('accepted', 'Accepted'),
+            ('rejected', 'Rejected'),
+            ('reassigned', 'Reassigned'),
+            ('assignment_failed', 'Assignment Failed'),
+            ('closed', 'Closed')
+        ],
         null=False,
         default='pending'
     )
