@@ -25,34 +25,168 @@ from django.shortcuts import render
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.core.cache import cache
-
+from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
+from users.models import LawyerProfile  
 from users.permissions import IsAdmin, IsUser
+from .permissions import IsAdminOrReadOnly 
+from cases.services import update_case_and_cpd, assign_case_automatically
+from api.permissions import IsAdminOrReadOnly, IsAdminOrIsAssignedLawyer 
+from api.serializers import CaseSerializer, CaseAssignmentSerializer 
+from cases.models import Case, CaseAssignment
+from users.models import LawyerProfile
+
+User = get_user_model()
+
+class PlaceholderAssignmentSerializer: pass 
+try:
+    serializer_class = CaseAssignmentSerializer
+except NameError:
+    serializer_class = PlaceholderAssignmentSerializer 
 
 class CaseAssignmentViewSet(viewsets.ModelViewSet):
-    """
-    A ViewSet for viewing and editing CaseAssignment instances.
-    Provides standard CRUD operations and custom actions.
-    """
     queryset = CaseAssignment.objects.all()
     serializer_class = CaseAssignmentSerializer
-    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['case__status', 'status', 'lawyer']
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly] 
+
+    def get_permissions(self):
+        """
+        Dynamically assigns permission classes based on the action requested.
+        """
+        if self.action in ['my_cases', 'all_assignments', 'my_lawyer']:
+            return [IsAuthenticated()]
+        
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsAdminOrIsAssignedLawyer()]
+
+        return [IsAuthenticated(), IsAdminOrReadOnly()]
+
+    def get_queryset(self):
+        """Restricts queryset based on user role."""
+        user = self.request.user
+        if user.role == 'lsk_admin':
+            return CaseAssignment.objects.all().select_related('case', 'lawyer', 'lawyer__user')
+        try:
+            lawyer_profile = user.lawyer_profile
+            return CaseAssignment.objects.filter(lawyer=lawyer_profile).select_related('case', 'lawyer', 'lawyer__user')
+        except LawyerProfile.DoesNotExist:
+            case_ids = Case.objects.filter(detainee__user=user).values_list('case_id', flat=True)
+            return CaseAssignment.objects.filter(case__in=case_ids).select_related('case', 'lawyer', 'lawyer__user')
+
+
+    @action(detail=True, methods=['post'], url_path='accept')
+    def accept_case(self, request, pk=None):
+        """Lawyer accepts a pending assigned case."""
+        assignment = self.get_object()
+        
+        if assignment.lawyer.user != request.user:
+             return Response({"detail": "Permission denied. You are not the assigned lawyer."}, status=status.HTTP_403_FORBIDDEN)
+        
+        if assignment.status != 'pending':
+            return Response({"detail": f"Case already processed with status: {assignment.status}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        assignment.status = 'accepted'
+        assignment.confirmed_by_lawyer = True
+        assignment.save()
+
+        case = assignment.case
+        case.status = 'accepted'
+        case.stage = 'in_progress'
+        case.save()
+
+        CaseAssignment.objects.filter(
+            case=case, 
+            status__in=['pending', 'reassigned']
+        ).exclude(pk=assignment.pk).update(status='handled', reject_reason='Accepted by another lawyer.')
+
+        return Response({"detail": "Case accepted. Status is now 'in_progress'."}, status=status.HTTP_200_OK)
+
+
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject_case(self, request, pk=None):
+        """Lawyer rejects a pending assigned case."""
+        assignment = self.get_object()
+        
+        if assignment.lawyer.user != request.user:
+             return Response({"detail": "Permission denied. You are not the assigned lawyer."}, status=status.HTTP_403_FORBIDDEN)
+
+        if assignment.status != 'pending':
+            return Response({"detail": f"Case already processed with status: {assignment.status}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        assignment.status = 'rejected'
+        assignment.reject_reason = request.data.get('reason', 'Lawyer explicitly rejected the case.')
+        assignment.save()
+
+        reassignment_result = assign_case_automatically(assignment.case.case_id)
+        
+        if reassignment_result and reassignment_result.get('status') == 'assignment_failed':
+             return Response(reassignment_result.get('notice'), status=status.HTTP_200_OK)
+        
+        return Response({"detail": "Case rejected. New assignment triggered (if available)."}, status=status.HTTP_200_OK)
+
+
+    @action(detail=True, methods=['post'], url_path='confirm-completion')
+    def confirm_completion(self, request, pk=None):
+        """Lawyer confirms they have completed the case work."""
+        assignment = self.get_object()
+        
+        if assignment.lawyer.user != request.user:
+             return Response({"detail": "Permission denied. You are not the assigned lawyer."}, status=status.HTTP_403_FORBIDDEN)
+        
+        if assignment.status != 'accepted':
+            return Response({"detail": "Completion can only be confirmed on an accepted case."}, status=status.HTTP_400_BAD_REQUEST)
+
+        assignment.confirmed_by_lawyer = True
+        assignment.save()
+
+        update_case_and_cpd(assignment) 
+        
+        return Response({"detail": "Lawyer completion confirmed. Awaiting applicant confirmation."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='applicant-confirm-completion')
+    def applicant_confirm_completion(self, request, pk=None):
+        """Applicant confirms the case work has been completed by the lawyer."""
+        assignment = self.get_object()
+
+        if assignment.case.detainee and assignment.case.detainee.user != request.user:
+            return Response({"detail": "Permission denied. You are not the associated applicant."}, status=status.HTTP_403_FORBIDDEN)
+
+        if assignment.status != 'accepted':
+            return Response({"detail": "Completion can only be confirmed on an accepted case."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        assignment.confirmed_by_applicant = True
+        assignment.save()
+        
+        update_case_and_cpd(assignment) 
+
+        return Response({"detail": "Applicant completion confirmed. Case status updated."}, status=status.HTTP_200_OK)
+
 
     @action(detail=False, methods=['get'], url_path='my-cases')
     def my_cases(self, request):
         try:
             lawyer_profile = request.user.lawyer_profile
         except LawyerProfile.DoesNotExist:
-            return Response({"error": "You are not a lawyer"}, status=403)
+            return Response({"error": "You are not a lawyer"}, status=status.HTTP_403_FORBIDDEN)
 
         assignments = CaseAssignment.objects.filter(lawyer=lawyer_profile, is_assigned=True)
         cases = [assignment.case for assignment in assignments]
         serializer = CaseSerializer(cases, many=True)
         return Response(serializer.data)
 
+
     @action(detail=False, methods=['get'], url_path='all-assignments')
     def all_assignments(self, request):
-        if request.user.role != 'lsk_admin':
-            return Response({"error": "Access denied"}, status=403)
+        if request.user.role != 'admin':
+            return Response({"error": "Access denied. Requires admin role."}, status=status.HTTP_403_FORBIDDEN)
 
         assignments = CaseAssignment.objects.filter(is_assigned=True).select_related(
             'case', 'case__detainee', 'lawyer', 'lawyer__user'
@@ -74,13 +208,13 @@ class CaseAssignmentViewSet(viewsets.ModelViewSet):
             })
         
         return Response(result)
-
+    
     @action(detail=True, methods=['get'], url_path='my-lawyer')
     def my_lawyer(self, request, pk=None):
         case = get_object_or_404(Case, pk=pk)
         assignment = CaseAssignment.objects.filter(case=case, is_assigned=True).first()
         if not assignment:
-            return Response({"error": "No lawyer assigned yet"}, status=404)
+            return Response({"error": "No lawyer assigned yet"}, status=status.HTTP_404_NOT_FOUND)
 
         lawyer_data = {
             'name': f"{assignment.lawyer.user.first_name} {assignment.lawyer.user.last_name}",
@@ -90,7 +224,7 @@ class CaseAssignmentViewSet(viewsets.ModelViewSet):
         }
         return Response(lawyer_data)
 
-
+    
 class CPDPointViewSet(viewsets.ModelViewSet):
     queryset = CPDPoint.objects.all()
     serializer_class = CPDPointSerializer
@@ -129,11 +263,9 @@ class UsersViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['role']
 
-
 class LawyersViewSet(viewsets.ModelViewSet):
     queryset = LawyerProfile.objects.all()
     serializer_class = LawyerProfileSerializer
-
 
 class LskAdminViewSet(viewsets.ModelViewSet):
     queryset = LawyerProfile.objects.filter(user__role='lsk_admin')
@@ -158,7 +290,6 @@ class LawyerRegistrationView(APIView):
                 'email': user.email
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 otp_storage = {}
 
@@ -185,7 +316,6 @@ class ForgotPasswordView(APIView):
         )
 
         return Response({"detail": "OTP sent to your email."})
-
 
 class VerifyCodeView(APIView):
     permission_classes = [AllowAny]
@@ -248,15 +378,6 @@ class UserSignupView(generics.CreateAPIView):
 
 
 
-from django.contrib.auth import authenticate
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
-from users.models import LawyerProfile  
 
 User = get_user_model()
 
