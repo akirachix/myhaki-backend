@@ -420,7 +420,7 @@ class UserSerializer(serializers.ModelSerializer):
                 profile.practice_number = practice_number
                 profile.save()
             if cpd_points_2025 is not None:
-                profile.cpd_points_2025 = cpd_points_2025 + 1
+                profile.cpd_points_2025 = cpd_points_2025
                 profile.save()
 
         return instance

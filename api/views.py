@@ -1,7 +1,7 @@
 from rest_framework import viewsets, generics, status
 from rest_framework.permissions import AllowAny
 from django.shortcuts import render
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status,permissions
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import CaseAssignmentSerializer, CaseSerializer,CPDPointSerializer,DetaineeSerializer
@@ -257,6 +257,13 @@ class CaseViewSet(viewsets.ModelViewSet):
 
     permission_classes = [AllowAny]  
 
+class MyCaseViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Case.objects.filter(user=self.request.user)
+ 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
