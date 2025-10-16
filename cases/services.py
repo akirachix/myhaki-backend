@@ -63,13 +63,31 @@ def assign_case_automatically(case_id):
         'environment': 'environment_law',
         'employment': 'employment_law',
         'civil': 'civil_law',
-        'other': 'criminal_law'
+        'other': 'criminal_law',
+        'theft': 'criminal_law',
+        'assault': 'criminal_law',
+        'murder': 'criminal_law',
+        'abduction': 'criminal_law',
+        'fraud': 'corporate_law',
+        'harassment': 'employment_law',
     }
-
-    field_name = specialization_map.get(case.predicted_case_type.lower(), None)
+    case_type = case.predicted_case_type.lower().strip()
+    if " - " in case_type:
+            case_type = case_type.split(" - ")[0].strip()
+    elif "/" in case_type:
+            case_type = case_type.split("/")[0].strip()
+    field_name = specialization_map.get(case_type)
+    if not field_name:
+        for key, value in specialization_map.items():
+            if key in case_type:
+                field_name = value
+                break
+        logger.error(f"Unknown predicted case type: {case.predicted_case_type}")
+        return None
     if not field_name:
         logger.error(f"Unknown predicted case type: {case.predicted_case_type}")
         return None
+
 
     lawyers = LawyerProfile.objects.filter(verified=True, **{field_name: True})
 

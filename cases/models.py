@@ -80,6 +80,13 @@ class Case(models.Model):
         null=True,
         blank=True
     )
+    user = models.ForeignKey(
+       User,
+       on_delete=models.CASCADE,
+       null=True,
+       blank=True,
+       limit_choices_to={'role': 'applicant'}
+   )
     predicted_urgency_level = models.CharField(
         max_length=20,
         choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')],
@@ -87,6 +94,7 @@ class Case(models.Model):
         blank=True
     )
     date_of_offense = models.DateField(null=True, blank=True)
+
     trial_date = models.DateField(null=True, blank=True)
     police_station = models.CharField(max_length=255, null=True, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
