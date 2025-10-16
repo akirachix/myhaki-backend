@@ -296,7 +296,7 @@ class UserSerializer(serializers.ModelSerializer):
             'constitutional_law', 'corporate_law', 'family_law', 'pro_bono_legal_services',
             'alternative_dispute_resolution', 'regional_and_international_law', 'mining_law',
         ]
-        read_only_fields = ['id', 'is_deleted', 'created_at', 'updated_at', 'profile_id', 'verified', 'cpd_points_2025']
+        read_only_fields = ['id', 'is_deleted', 'created_at', 'updated_at', 'profile_id', 'verified']
         extra_kwargs = {
             'email': {'required': True},
             'first_name': {'required': True},
