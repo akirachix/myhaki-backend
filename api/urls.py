@@ -10,7 +10,7 @@ router.register(r'cpd-points', CPDPointViewSet, basename='cpdpoint')
 router.register(r'case-assignments', CaseAssignmentViewSet, basename='case-assignment')
 router.register(r"users", UsersViewSet, basename="users")
 router.register(r"detainees", DetaineeViewSet, basename="detainees")
-router.register(r"my-cases", MyCaseViewSet, basename="my-cases")
+router.register(r"applicant-cases", MyCaseViewSet, basename="applicant-cases")
 # router.register(r"my-cases", MyCaseViewSet, basename="my-cases")
 
 
