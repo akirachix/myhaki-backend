@@ -1,6 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from api.views import CaseAssignmentViewSet, CaseViewSet,CPDPointViewSet,DetaineeViewSet, LawyerRegistrationView, ForgotPasswordView, VerifyCodeView, ResetPasswordView,UsersViewSet, UserSignupView, LoginView,MyCaseViewSet
+from api.views import CaseAssignmentViewSet, CaseViewSet,CPDPointViewSet,DetaineeViewSet, LawyerRegistrationView, ForgotPasswordView, VerifyCodeView, ResetPasswordView,UsersViewSet, UserSignupView, LoginView,ApplicantCaseViewSet
 from rest_framework.authtoken.views import obtain_auth_token
 
 
@@ -10,8 +10,8 @@ router.register(r'cpd-points', CPDPointViewSet, basename='cpdpoint')
 router.register(r'case-assignments', CaseAssignmentViewSet, basename='case-assignment')
 router.register(r"users", UsersViewSet, basename="users")
 router.register(r"detainees", DetaineeViewSet, basename="detainees")
-router.register(r"applicant-cases", MyCaseViewSet, basename="applicant-cases")
-# router.register(r"my-cases", MyCaseViewSet, basename="my-cases")
+router.register(r"applicant-cases", ApplicantCaseViewSet, basename="applicant-cases")
+
 
 
 

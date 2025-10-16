@@ -257,7 +257,7 @@ class CaseViewSet(viewsets.ModelViewSet):
 
     permission_classes = [AllowAny]  
 
-class MyCaseViewSet(viewsets.ReadOnlyModelViewSet):
+class ApplicantCaseViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CaseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
