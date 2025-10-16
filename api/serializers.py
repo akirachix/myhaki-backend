@@ -266,7 +266,7 @@ class CaseAssignmentSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    practice_number = serializers.CharField(required=False, allow_blank=True)
+    practice_number = serializers.CharField(required=False, allow_blank=True, write_only=True)
     password = serializers.CharField(write_only=True)
     profile_id = serializers.SerializerMethodField()
     verified = serializers.SerializerMethodField()
