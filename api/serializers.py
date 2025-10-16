@@ -266,7 +266,7 @@ class CaseAssignmentSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    practice_number = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    practice_number = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     profile_id = serializers.SerializerMethodField()
     verified = serializers.SerializerMethodField()
@@ -275,7 +275,7 @@ class UserSerializer(serializers.ModelSerializer):
     physical_address = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()
-    cpd_points_2025 = serializers.SerializerMethodField()
+    cpd_points_2025 = serializers.IntegerField( source='LawyerProfile.cpd_points_2025',required=True,allow_null=False)
     criminal_law = serializers.SerializerMethodField()
     constitutional_law = serializers.SerializerMethodField()
     corporate_law = serializers.SerializerMethodField()
