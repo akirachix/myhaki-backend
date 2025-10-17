@@ -33,7 +33,7 @@ class LawyerProfileSerializer(serializers.ModelSerializer):
                   'criminal_law', 'constitutional_law', 'corporate_law', 'family_law',
                   'pro_bono_legal_services', 'alternative_dispute_resolution',
                   'regional_and_international_law', 'mining_law']
-        read_only_fields = ['profile_id', 'verified', 'cpd_points_2025']
+        read_only_fields = ['profile_id', 'verified']
 
 
 class DetaineeSerializer(serializers.ModelSerializer):
@@ -275,7 +275,7 @@ class UserSerializer(serializers.ModelSerializer):
     physical_address = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()
-    cpd_points_2025 = serializers.IntegerField( source='LawyerProfile.cpd_points_2025',required=True,allow_null=False)
+    cpd_points_2025 = serializers.IntegerField( source='lawyer_profile.cpd_points_2025',required=True,allow_null=False)
     criminal_law = serializers.SerializerMethodField()
     constitutional_law = serializers.SerializerMethodField()
     corporate_law = serializers.SerializerMethodField()
