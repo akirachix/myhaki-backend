@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import LawyerProfile
 
+# cpd points models
 class CPDPoint(models.Model):
     cpd_id = models.AutoField(primary_key=True)
     lawyer = models.ForeignKey(LawyerProfile, on_delete=models.CASCADE, null=True, blank=True)
