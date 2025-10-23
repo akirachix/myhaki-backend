@@ -1,7 +1,7 @@
 name: Django Deployment CI
 on:
   push:
-    branches: [ "main", "feature/bug-fix" ]
+    branches: [ "main" ]
 jobs:
   release:
     runs-on: ubuntu-latest
