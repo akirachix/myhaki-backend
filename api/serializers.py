@@ -275,7 +275,7 @@ class UserSerializer(serializers.ModelSerializer):
     physical_address = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()
-    cpd_points_2025 = serializers.IntegerField( source='lawyer_profile.cpd_points_2025',required=True,allow_null=False)
+    cpd_points_2025 = serializers.IntegerField( source='lawyer_profile.cpd_points_2025',required=False,allow_null=True)
     criminal_law = serializers.SerializerMethodField()
     constitutional_law = serializers.SerializerMethodField()
     corporate_law = serializers.SerializerMethodField()
