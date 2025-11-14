@@ -1,5 +1,6 @@
 
 import logging
+import re
 from django.utils import timezone
 from .utils import haversine
 from .models import Case, CaseAssignment
@@ -62,20 +63,34 @@ def assign_case_automatically(case_id):
         'corporate': 'corporate_law',
         'environment': 'environment_law',
         'employment': 'employment_law',
+        'property': 'civil_law',  
         'civil': 'civil_law',
         'other': 'criminal_law',
         'theft': 'criminal_law',
         'assault': 'criminal_law',
         'murder': 'criminal_law',
-        'abduction': 'criminal_law',
+        'abduction': 'criminal_law',  
         'fraud': 'corporate_law',
         'harassment': 'employment_law',
+
     }
     case_type = case.predicted_case_type.lower().strip()
-    if " - " in case_type:
-            case_type = case_type.split(" - ")[0].strip()
-    elif "/" in case_type:
-            case_type = case_type.split("/")[0].strip()
+    case_type_clean = re.sub(r'\(.*?\)', '', case_type).strip()
+    separators = [',', '/', '-', '&']
+    parts = [case_type_clean]
+    case_type = None
+    for p in parts:
+        if p.endswith(" law"):
+            p = p.replace(" law", "").strip()
+
+        if p in specialization_map:
+            case_type = p
+            break
+
+    if not case_type:
+        case_type = parts[0].replace(" law", "").strip()
+
+
     field_name = specialization_map.get(case_type)
     if not field_name:
         for key, value in specialization_map.items():
@@ -84,10 +99,10 @@ def assign_case_automatically(case_id):
                 break
         logger.error(f"Unknown predicted case type: {case.predicted_case_type}")
         return None
+    
     if not field_name:
         logger.error(f"Unknown predicted case type: {case.predicted_case_type}")
         return None
-
 
     lawyers = LawyerProfile.objects.filter(verified=True, **{field_name: True})
 
@@ -106,7 +121,7 @@ def assign_case_automatically(case_id):
         in_progress_count = CaseAssignment.objects.filter(
             lawyer=lawyer,
             status='accepted',
-            case__stage__in=['in_progress', 'handled', 'arraignment', 'bail', 'trial', 'completed', 'closed']
+            case__stage__in=['in_progress', 'handled', 'arraignment', 'bail', 'trial']
         ).count()
         if in_progress_count < MAX_IN_PROGRESS_CASES:
             available_lawyers.append(lawyer)
@@ -155,8 +170,8 @@ def update_case_and_cpd(assignment: CaseAssignment):
         return
 
     if assignment.confirmed_by_lawyer and assignment.confirmed_by_applicant:
-        case.stage = 'closed'
-        case.status = 'closed'
+        case.stage = 'completed'
+        case.status = 'completed'
         case.save()
         
         CaseAssignment.objects.filter(case=case).exclude(assignment_id=assignment.assignment_id).update(status='handled')
